@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
@@ -53,7 +54,9 @@ class WelcomePage extends StatelessWidget {
               Text(
                 'StudyCoach AI',
                 style: AppTextStyles.headingLarge.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -62,7 +65,9 @@ class WelcomePage extends StatelessWidget {
               Text(
                 'Your AI-powered path to\nacademic excellence',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -77,64 +82,6 @@ class WelcomePage extends StatelessWidget {
                       );
                 },
               ),
-              const SizedBox(height: 24),
-              // Already have an account? Sign In
-              GestureDetector(
-                onTap: () {
-                  // Navigation link stub
-                },
-                child: RichText(
-                  text: TextSpan(
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Already have an account? '),
-                      TextSpan(
-                        text: 'Sign In',
-                        style: TextStyle(
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.primaryDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Dots indicators (Page 1)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 24,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
