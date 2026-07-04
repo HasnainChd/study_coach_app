@@ -1,31 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
 import 'core/theme/app_theme.dart';
-import 'features/bloc/theme_bloc.dart';
+import 'core/services/notification_service.dart';
+import 'features/bloc/chat_bloc.dart';
 import 'features/bloc/navigation_bloc.dart';
 import 'features/bloc/subjects_bloc.dart';
+import 'features/bloc/theme_bloc.dart';
 import 'features/bloc/timer_bloc.dart';
-import 'features/bloc/chat_bloc.dart';
-import 'features/onboarding/presentation/pages/welcome_page.dart';
-import 'features/onboarding/presentation/pages/add_subjects_page.dart';
-import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
 import 'features/dashboard/presentation/pages/dashboard_shell.dart';
 import 'features/focus/presentation/pages/focus_timer_page.dart';
+import 'features/onboarding/presentation/pages/add_subjects_page.dart';
+import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
+import 'features/onboarding/presentation/pages/welcome_page.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'features/subjects/data/datasources/subject_local_data_source.dart';
+import 'features/subjects/data/repositories/subject_repository_impl.dart';
+import 'features/subjects/domain/repositories/subject_repository.dart';
+import 'features/subjects/domain/usecases/add_subject_usecase.dart';
+import 'features/subjects/domain/usecases/get_subjects_usecase.dart';
+import 'features/subjects/domain/usecases/remove_subject_usecase.dart';
+import 'features/subjects/domain/usecases/generate_study_plan_usecase.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  final box = await Hive.openBox('study_coach_box');
+
+  // Initialize notifications service
+  final notificationService = NotificationService();
+  await notificationService.init();
+
+  final localDataSource = SubjectLocalDataSourceImpl(box);
+  final repository = SubjectRepositoryImpl(localDataSource);
+
+  // Read onboarding complete flag
+  final hasCompletedOnboarding = await repository.getHasCompletedOnboarding();
+  final initialScreen = hasCompletedOnboarding ? AppScreen.dashboard : AppScreen.welcome;
+
+  runApp(MyApp(
+    repository: repository,
+    initialScreen: initialScreen,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SubjectRepository repository;
+  final AppScreen initialScreen;
+
+  const MyApp({
+    super.key,
+    required this.repository,
+    required this.initialScreen,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc()),
-        BlocProvider<NavigationBloc>(create: (context) => NavigationBloc()),
-        BlocProvider<SubjectsBloc>(create: (context) => SubjectsBloc()),
+        BlocProvider<NavigationBloc>(
+          create: (context) => NavigationBloc(initialScreen: initialScreen),
+        ),
+        BlocProvider<SubjectsBloc>(
+          create: (context) => SubjectsBloc(
+            repository: repository,
+            getSubjectsUseCase: GetSubjectsUseCase(repository),
+            addSubjectUseCase: AddSubjectUseCase(repository),
+            removeSubjectUseCase: RemoveSubjectUseCase(repository),
+            generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
+          )..add(LoadSubjectsEvent()),
+        ),
         BlocProvider<TimerBloc>(create: (context) => TimerBloc()),
         BlocProvider<ChatBloc>(create: (context) => ChatBloc()),
       ],
@@ -44,7 +90,8 @@ class MyApp extends StatelessWidget {
                     duration: const Duration(milliseconds: 350),
                     switchInCurve: Curves.easeOutCubic,
                     switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (Widget child, Animation<double> animation) {
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
                       final slideAnimation = Tween<Offset>(
                         begin: const Offset(0.05, 0.0),
                         end: Offset.zero,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/gradient_background.dart';
 
 class StudyAnalyticsPage extends StatefulWidget {
   const StudyAnalyticsPage({super.key});
@@ -15,7 +16,15 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
   int _selectedDayIndex = 3; // Default select Thursday (index 3)
 
   final List<String> _days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  final List<double> _weeklyProgress = [0.35, 0.55, 0.30, 0.85, 0.48, 0.22, 0.15];
+  final List<double> _weeklyProgress = [
+    0.35,
+    0.55,
+    0.30,
+    0.85,
+    0.48,
+    0.22,
+    0.15
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +43,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
               Text(
                 'Analytics',
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -60,7 +71,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                     Text(
                       'Activity This Week',
                       style: AppTextStyles.labelMedium.copyWith(
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
                         fontSize: 16,
                       ),
                     ),
@@ -88,12 +101,16 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                                 height: 110,
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? AppColors.darkBorder.withOpacity(0.4)
-                                      : AppColors.lightBorder.withOpacity(0.4),
+                                      ? AppColors.darkBorder
+                                          .withValues(alpha: 0.4)
+                                      : AppColors.lightBorder
+                                          .withValues(alpha: 0.4),
                                   borderRadius: BorderRadius.circular(6),
                                   border: isSelected
                                       ? Border.all(
-                                          color: isDark ? Colors.white : AppColors.primary,
+                                          color: isDark
+                                              ? Colors.white
+                                              : AppColors.primary,
                                           width: 1.2,
                                         )
                                       : null,
@@ -108,7 +125,8 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? AppColors.primary
-                                            : AppColors.primary.withOpacity(isDark ? 0.35 : 0.45),
+                                            : AppColors.primary.withValues(
+                                                alpha: isDark ? 0.35 : 0.45),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                     ),
@@ -121,9 +139,15 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                                 day,
                                 style: TextStyle(
                                   color: isSelected
-                                      ? (isDark ? Colors.white : AppColors.primaryDark)
-                                      : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      ? (isDark
+                                          ? Colors.white
+                                          : AppColors.primaryDark)
+                                      : (isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary),
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                   fontSize: 12,
                                 ),
                               ),
@@ -141,20 +165,26 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
               Text(
                 'Subject Breakdown',
                 style: AppTextStyles.headingSmall.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                   fontSize: 18,
                 ),
               ),
               const SizedBox(height: 16),
 
               // Breakdown rows
-              _buildBreakdownRow('CS', '8.5h', '40%', 0.40, AppColors.subjectGreen, isDark),
+              _buildBreakdownRow(
+                  'CS', '8.5h', '40%', 0.40, AppColors.subjectGreen, isDark),
               const SizedBox(height: 20),
-              _buildBreakdownRow('Math', '5.2h', '25%', 0.25, AppColors.subjectPurple, isDark),
+              _buildBreakdownRow(
+                  'Math', '5.2h', '25%', 0.25, AppColors.subjectPurple, isDark),
               const SizedBox(height: 20),
-              _buildBreakdownRow('Languages', '4.1h', '20%', 0.20, AppColors.subjectOrange, isDark),
+              _buildBreakdownRow('Languages', '4.1h', '20%', 0.20,
+                  AppColors.subjectOrange, isDark),
               const SizedBox(height: 20),
-              _buildBreakdownRow('Physics', '3.1h', '15%', 0.15, AppColors.subjectPink, isDark),
+              _buildBreakdownRow('Physics', '3.1h', '15%', 0.15,
+                  AppColors.subjectPink, isDark),
               const SizedBox(height: 24),
             ],
           ),
@@ -181,7 +211,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
             Text(
               label,
               style: AppTextStyles.labelSmall.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
                 fontSize: 9,
                 letterSpacing: 0.5,
               ),
@@ -208,7 +240,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
             Text(
               subject,
               style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -217,7 +251,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                 Text(
                   hours,
                   style: TextStyle(
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -225,7 +261,9 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
                 Text(
                   percent,
                   style: TextStyle(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -239,7 +277,8 @@ class _StudyAnalyticsPageState extends State<StudyAnalyticsPage> {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: progressValue,
-            backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            backgroundColor:
+                isDark ? AppColors.darkBorder : AppColors.lightBorder,
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 6,
           ),

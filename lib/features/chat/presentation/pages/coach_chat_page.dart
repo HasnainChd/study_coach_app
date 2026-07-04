@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
@@ -55,7 +56,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Row(
                 children: [
                   const SizedBox(width: 48), // spacer
@@ -63,7 +65,9 @@ class _CoachChatPageState extends State<CoachChatPage> {
                   Text(
                     'AI Coach',
                     style: AppTextStyles.headingSmall.copyWith(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   const Spacer(),
@@ -71,7 +75,9 @@ class _CoachChatPageState extends State<CoachChatPage> {
                   IconButton(
                     icon: Icon(
                       Icons.history_rounded,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                     onPressed: () {},
                   ),
@@ -89,7 +95,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                 builder: (context, state) {
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     itemCount: state.messages.length,
                     itemBuilder: (context, index) {
                       final message = state.messages[index];
@@ -145,8 +152,10 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                       borderRadius: BorderRadius.only(
                                         topLeft: const Radius.circular(20),
                                         topRight: const Radius.circular(20),
-                                        bottomLeft: Radius.circular(isBot ? 4 : 20),
-                                        bottomRight: Radius.circular(isBot ? 20 : 4),
+                                        bottomLeft:
+                                            Radius.circular(isBot ? 4 : 20),
+                                        bottomRight:
+                                            Radius.circular(isBot ? 20 : 4),
                                       ),
                                       border: isBot
                                           ? Border.all(
@@ -158,7 +167,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                           : null,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.02),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.02),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -227,7 +237,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                   color: isDark ? AppColors.darkCardBg : Colors.white,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 1.5,
                   ),
                 ),
@@ -239,7 +250,9 @@ class _CoachChatPageState extends State<CoachChatPage> {
                         controller: _textController,
                         onSubmitted: (_) => _sendMessage(),
                         style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.lightTextPrimary,
                           fontSize: 15,
                         ),
                         decoration: InputDecoration(

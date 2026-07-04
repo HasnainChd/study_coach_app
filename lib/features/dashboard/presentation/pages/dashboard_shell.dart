@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../analytics/presentation/pages/study_analytics_page.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
-import '../../../home/presentation/pages/home_dashboard_page.dart';
-import '../../../analytics/presentation/pages/study_analytics_page.dart';
 import '../../../chat/presentation/pages/coach_chat_page.dart';
 import '../../../chat/presentation/pages/coach_empty_state_page.dart';
-import '../../../subjects/presentation/pages/subject_manager_page.dart';
+import '../../../home/presentation/pages/home_dashboard_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
+import '../../../subjects/presentation/pages/subject_manager_page.dart';
 
 class DashboardShell extends StatelessWidget {
   const DashboardShell({super.key});
@@ -37,7 +38,7 @@ class DashboardShell extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
                   blurRadius: 16,
                   offset: const Offset(0, -4),
                 ),
@@ -45,7 +46,8 @@ class DashboardShell extends StatelessWidget {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -154,14 +156,16 @@ class DashboardShell extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: isSelected
-                    ? AppColors.primary.withOpacity(isDark ? 0.15 : 0.08)
+                    ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
                     : Colors.transparent,
               ),
               child: Icon(
                 isSelected ? activeIcon : icon,
                 color: isSelected
                     ? AppColors.primary
-                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                    : (isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary),
                 size: 24,
               ),
             ),
@@ -172,7 +176,9 @@ class DashboardShell extends StatelessWidget {
                 fontSize: 10,
                 color: isSelected
                     ? (isDark ? Colors.white : AppColors.primaryDark)
-                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                    : (isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),

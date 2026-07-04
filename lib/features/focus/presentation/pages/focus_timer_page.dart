@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
@@ -28,13 +29,16 @@ class FocusTimerPage extends StatelessWidget {
               children: [
                 // Top navigation bar with back arrow
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
                   child: Row(
                     children: [
                       IconButton(
                         icon: Icon(
                           Icons.arrow_back_rounded,
-                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.lightTextPrimary,
                         ),
                         onPressed: () {
                           // Redirect back to dashboard container (which displays Home tab index 0)
@@ -52,7 +56,9 @@ class FocusTimerPage extends StatelessWidget {
                 Text(
                   'Focus Session ${state.sessionNumber} of 4',
                   style: AppTextStyles.headingSmall.copyWith(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
                     fontSize: 18,
                   ),
                 ),
@@ -69,7 +75,9 @@ class FocusTimerPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isActive
                             ? AppColors.primary
-                            : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            : (isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder),
                         shape: BoxShape.circle,
                       ),
                     );
@@ -92,7 +100,8 @@ class FocusTimerPage extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(isDark ? 0.35 : 0.15),
+                          color: AppColors.primary
+                              .withValues(alpha: isDark ? 0.35 : 0.15),
                           blurRadius: 36,
                           spreadRadius: 4,
                         ),
@@ -106,7 +115,9 @@ class FocusTimerPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 54.0,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.lightTextPrimary,
                             letterSpacing: -1.0,
                           ),
                         ),
@@ -114,7 +125,9 @@ class FocusTimerPage extends StatelessWidget {
                         Text(
                           'POMODORO',
                           style: AppTextStyles.labelSmall.copyWith(
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -151,7 +164,8 @@ class FocusTimerPage extends StatelessWidget {
                             color: AppColors.primary,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.35),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 20,
                                 offset: const Offset(0, 4),
                               ),
@@ -179,13 +193,17 @@ class FocusTimerPage extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: isDark ? AppColors.darkCardBg : Colors.white,
                             border: Border.all(
-                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
                               width: 1.5,
                             ),
                           ),
                           child: Icon(
                             Icons.skip_next_rounded,
-                            color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.lightTextPrimary,
                             size: 28,
                           ),
                         ),
