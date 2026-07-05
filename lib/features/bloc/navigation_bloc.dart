@@ -44,7 +44,8 @@ class SwitchDashboardTabEvent extends NavigationEvent {
 
 // BLOC
 class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
-  NavigationBloc() : super(NavigationState(currentScreen: AppScreen.welcome, activeTabIndex: 0)) {
+  NavigationBloc({AppScreen initialScreen = AppScreen.welcome})
+      : super(NavigationState(currentScreen: initialScreen, activeTabIndex: 0)) {
     on<NavigateToScreenEvent>((event, emit) {
       emit(state.copyWith(currentScreen: event.screen));
     });

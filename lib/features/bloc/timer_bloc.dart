@@ -33,10 +33,19 @@ class TimerState {
 // EVENTS
 abstract class TimerEvent {}
 
-class StartTimerEvent extends TimerEvent {}
+class StartTimerEvent extends TimerEvent {
+  final int? durationSeconds;
+  StartTimerEvent({this.durationSeconds});
+}
+
 class PauseTimerEvent extends TimerEvent {}
 class ResetTimerEvent extends TimerEvent {}
 class SkipSessionEvent extends TimerEvent {}
+
+class SetDurationEvent extends TimerEvent {
+  final int durationSeconds;
+  SetDurationEvent(this.durationSeconds);
+}
 
 class TickEvent extends TimerEvent {
   final int remainingSeconds;
@@ -57,13 +66,20 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
           sessionNumber: 1,
         )) {
     on<StartTimerEvent>((event, emit) {
-      if (state.isRunning) return;
-
       _tickerSubscription?.cancel();
-      emit(state.copyWith(isRunning: true));
+
+      final nextDuration = event.durationSeconds ?? state.remainingSeconds;
+      final nextTotal = event.durationSeconds ?? state.totalSeconds;
+
+      emit(TimerState(
+        remainingSeconds: nextDuration,
+        totalSeconds: nextTotal,
+        isRunning: true,
+        sessionNumber: state.sessionNumber,
+      ));
 
       _tickerSubscription = Stream.periodic(const Duration(seconds: 1), (x) => x)
-          .take(state.remainingSeconds)
+          .take(nextDuration)
           .listen((tick) {
         add(TickEvent(state.remainingSeconds - 1));
       });
@@ -105,6 +121,16 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         totalSeconds: state.totalSeconds,
         isRunning: false,
         sessionNumber: nextSession,
+      ));
+    });
+
+    on<SetDurationEvent>((event, emit) {
+      _tickerSubscription?.cancel();
+      emit(TimerState(
+        remainingSeconds: event.durationSeconds,
+        totalSeconds: event.durationSeconds,
+        isRunning: false,
+        sessionNumber: state.sessionNumber,
       ));
     });
   }

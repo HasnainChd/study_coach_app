@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
@@ -33,7 +34,8 @@ class SubjectManagerPage extends StatelessWidget {
                     topRight: Radius.circular(24),
                   ),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 1.5,
                   ),
                 ),
@@ -45,7 +47,9 @@ class SubjectManagerPage extends StatelessWidget {
                     Text(
                       'Add New Subject',
                       style: AppTextStyles.headingSmall.copyWith(
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -53,7 +57,8 @@ class SubjectManagerPage extends StatelessWidget {
                     TextField(
                       controller: nameController,
                       style: TextStyle(
-                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                        color:
+                            isDark ? Colors.white : AppColors.lightTextPrimary,
                       ),
                       decoration: const InputDecoration(
                         hintText: 'Enter subject name...',
@@ -82,7 +87,9 @@ class SubjectManagerPage extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 border: isSelected
                                     ? Border.all(
-                                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                        color: isDark
+                                            ? Colors.white
+                                            : AppColors.lightTextPrimary,
                                         width: 2.5,
                                       )
                                     : null,
@@ -98,9 +105,11 @@ class SubjectManagerPage extends StatelessWidget {
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: stateContext,
-                          initialDate: DateTime.now().add(const Duration(days: 30)),
+                          initialDate:
+                              DateTime.now().add(const Duration(days: 30)),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
                           setModalState(() {
@@ -109,26 +118,35 @@ class SubjectManagerPage extends StatelessWidget {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkBgStart : AppColors.lightBgStart,
+                          color: isDark
+                              ? AppColors.darkBgStart
+                              : AppColors.lightBgStart,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.calendar_today_outlined,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
                               size: 18,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'Exam Date',
                               style: TextStyle(
-                                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.lightTextPrimary,
                               ),
                             ),
                             const Spacer(),
@@ -137,7 +155,9 @@ class SubjectManagerPage extends StatelessWidget {
                                   ? 'Select Date'
                                   : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
                               style: TextStyle(
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
                               ),
                             ),
                           ],
@@ -155,7 +175,8 @@ class SubjectManagerPage extends StatelessWidget {
                         context.read<SubjectsBloc>().add(
                               AddSubjectEvent(
                                 name: name,
-                                color: AppColors.getSubjectColorByIndex(selectedColorIndex),
+                                color: AppColors.getSubjectColorByIndex(
+                                    selectedColorIndex),
                                 examDate: selectedDate,
                               ),
                             );
@@ -175,8 +196,18 @@ class SubjectManagerPage extends StatelessWidget {
   String _formatMonthDay(DateTime? date) {
     if (date == null) return 'NO EXAM';
     final months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC'
     ];
     return 'EXAM: ${months[date.month - 1]} ${date.day}';
   }
@@ -193,11 +224,14 @@ class SubjectManagerPage extends StatelessWidget {
           children: [
             // Header title
             Padding(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 12.0),
+              padding:
+                  const EdgeInsets.only(left: 24.0, right: 24.0, top: 12.0),
               child: Text(
                 'Subjects',
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
               ),
             ),
@@ -209,14 +243,17 @@ class SubjectManagerPage extends StatelessWidget {
                 builder: (context, state) {
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    itemCount: state.subjects.length + 1, // list + bottom add button
+                    itemCount:
+                        state.subjects.length + 1, // list + bottom add button
                     itemBuilder: (context, index) {
                       if (index == state.subjects.length) {
                         // Dashed Outlined Add button
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 24.0, top: 8.0),
+                          padding:
+                              const EdgeInsets.only(bottom: 24.0, top: 8.0),
                           child: GestureDetector(
-                            onTap: () => _showAddSubjectBottomSheet(context, isDark),
+                            onTap: () =>
+                                _showAddSubjectBottomSheet(context, isDark),
                             child: Container(
                               height: 56,
                               decoration: BoxDecoration(
@@ -226,11 +263,14 @@ class SubjectManagerPage extends StatelessWidget {
                                       ? AppColors.darkBorder
                                       : AppColors.lightBorder,
                                   width: 1.5,
-                                  style: BorderStyle.solid, // solid fallback for dashed style
+                                  style: BorderStyle
+                                      .solid, // solid fallback for dashed style
                                 ),
                                 color: isDark
-                                    ? AppColors.darkCardBg.withOpacity(0.4)
-                                    : AppColors.lightCardBg.withOpacity(0.4),
+                                    ? AppColors.darkCardBg
+                                        .withValues(alpha: 0.4)
+                                    : AppColors.lightCardBg
+                                        .withValues(alpha: 0.4),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -266,10 +306,14 @@ class SubjectManagerPage extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
+                            color: isDark
+                                ? AppColors.darkCardBg
+                                : AppColors.lightCardBg,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
                               width: 1.2,
                             ),
                           ),
@@ -287,76 +331,105 @@ class SubjectManagerPage extends StatelessWidget {
                                   // Main content column
                                   Expanded(
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 18.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 18.0),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           // Title & Chevron Row
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
                                                 subject.name,
-                                                style: AppTextStyles.headingSmall.copyWith(
+                                                style: AppTextStyles
+                                                    .headingSmall
+                                                    .copyWith(
                                                   color: isDark
-                                                      ? AppColors.darkTextPrimary
-                                                      : AppColors.lightTextPrimary,
+                                                      ? AppColors
+                                                          .darkTextPrimary
+                                                      : AppColors
+                                                          .lightTextPrimary,
                                                   fontSize: 16,
                                                 ),
                                               ),
                                               Padding(
-                                                padding: const EdgeInsets.only(right: 16.0),
+                                                padding: const EdgeInsets.only(
+                                                    right: 16.0),
                                                 child: Icon(
                                                   Icons.chevron_right_rounded,
                                                   color: isDark
-                                                      ? AppColors.darkTextSecondary
-                                                      : AppColors.lightTextSecondary,
+                                                      ? AppColors
+                                                          .darkTextSecondary
+                                                      : AppColors
+                                                          .lightTextSecondary,
                                                   size: 20,
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 8),
-                                          // Exam Pill Tag
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: isDark
-                                                  ? AppColors.darkBorder.withOpacity(0.6)
-                                                  : AppColors.lightBorder.withOpacity(0.6),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _formatMonthDay(subject.examDate),
-                                              style: TextStyle(
+                                          if (subject.examDate != null) ...[
+                                            // Exam Pill Tag
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
                                                 color: isDark
-                                                    ? AppColors.darkTextSecondary
-                                                    : AppColors.lightTextSecondary,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
+                                                    ? AppColors.darkBorder
+                                                        .withValues(alpha: 0.6)
+                                                    : AppColors.lightBorder
+                                                        .withValues(alpha: 0.6),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                _formatMonthDay(subject.examDate),
+                                                style: TextStyle(
+                                                  color: isDark
+                                                      ? AppColors
+                                                          .darkTextSecondary
+                                                      : AppColors
+                                                          .lightTextSecondary,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 16),
+                                            const SizedBox(height: 16),
+                                          ] else ...[
+                                            const SizedBox(height: 8),
+                                          ],
                                           // Progress Bar Row
                                           Padding(
-                                            padding: const EdgeInsets.only(right: 16.0),
+                                            padding: const EdgeInsets.only(
+                                                right: 16.0),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Text(
                                                   'PROGRESS',
-                                                  style: AppTextStyles.labelSmall.copyWith(
+                                                  style: AppTextStyles
+                                                      .labelSmall
+                                                      .copyWith(
                                                     color: isDark
-                                                        ? AppColors.darkTextSecondary
-                                                        : AppColors.lightTextSecondary,
+                                                        ? AppColors
+                                                            .darkTextSecondary
+                                                        : AppColors
+                                                            .lightTextSecondary,
                                                     fontSize: 10,
                                                   ),
                                                 ),
                                                 Text(
                                                   '$percentProgress%',
                                                   style: TextStyle(
-                                                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : AppColors
+                                                            .lightTextPrimary,
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 12,
                                                   ),
@@ -367,13 +440,19 @@ class SubjectManagerPage extends StatelessWidget {
                                           const SizedBox(height: 8),
                                           // Progress Bar
                                           Padding(
-                                            padding: const EdgeInsets.only(right: 16.0),
+                                            padding: const EdgeInsets.only(
+                                                right: 16.0),
                                             child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                               child: LinearProgressIndicator(
                                                 value: subject.progress,
-                                                backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                                valueColor: AlwaysStoppedAnimation<Color>(subject.color),
+                                                backgroundColor: isDark
+                                                    ? AppColors.darkBorder
+                                                    : AppColors.lightBorder,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(subject.color),
                                                 minHeight: 5,
                                               ),
                                             ),

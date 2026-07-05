@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../bloc/navigation_bloc.dart';
 
@@ -31,7 +32,9 @@ class CoachEmptyStatePage extends StatelessWidget {
                   Text(
                     'AI Coach',
                     style: AppTextStyles.headingSmall.copyWith(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   const Spacer(),
@@ -39,7 +42,9 @@ class CoachEmptyStatePage extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Icons.history_rounded,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                     onPressed: () {},
                   ),
@@ -61,10 +66,10 @@ class CoachEmptyStatePage extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
-                            ? AppColors.primary.withOpacity(0.12)
-                            : AppColors.primary.withOpacity(0.08),
+                            ? AppColors.primary.withValues(alpha: 0.12)
+                            : AppColors.primary.withValues(alpha: 0.08),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                       ),
@@ -75,11 +80,11 @@ class CoachEmptyStatePage extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isDark
-                                ? AppColors.primary.withOpacity(0.8)
+                                ? AppColors.primary.withValues(alpha: 0.8)
                                 : AppColors.primary,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: AppColors.primary.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -121,7 +126,9 @@ class CoachEmptyStatePage extends StatelessWidget {
               Text(
                 'Your AI Coach is Ready',
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -129,7 +136,9 @@ class CoachEmptyStatePage extends StatelessWidget {
               Text(
                 'Add your subjects to get a personalised study plan and targeted practice.',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -182,7 +191,9 @@ class CoachEmptyStatePage extends StatelessWidget {
               Text(
                 'TAKES LESS THAN 2 MINUTES',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
                   fontSize: 10,
                   letterSpacing: 1.2,
                 ),
@@ -204,7 +215,7 @@ class CoachEmptyStatePage extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.6),
+            color: color.withValues(alpha: 0.6),
             blurRadius: size,
             spreadRadius: 2,
           ),
@@ -233,7 +244,9 @@ class CoachEmptyStatePage extends StatelessWidget {
           Text(
             text,
             style: AppTextStyles.bodyLarge.copyWith(
-              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 15,
             ),
