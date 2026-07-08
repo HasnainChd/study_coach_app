@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/secondary_button.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../bloc/subjects_bloc.dart';
 
 class SubjectManagerPage extends StatelessWidget {
@@ -22,168 +23,176 @@ class SubjectManagerPage extends StatelessWidget {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (stateContext, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(stateContext).viewInsets.bottom,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCardBg : Colors.white,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    width: 1.5,
-                  ),
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(stateContext).viewInsets.bottom,
                 ),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add New Subject',
-                      style: AppTextStyles.headingSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary,
-                      ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCardBg : Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                    const SizedBox(height: 16),
-                    // Subject Name Input
-                    TextField(
-                      controller: nameController,
-                      style: TextStyle(
-                        color:
-                            isDark ? Colors.white : AppColors.lightTextPrimary,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Enter subject name...',
-                      ),
+                    border: Border.all(
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      width: 1.5,
                     ),
-                    const SizedBox(height: 16),
-                    // Color dots selection
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(
-                        AppColors.subjectColors.length,
-                        (index) {
-                          final color = AppColors.subjectColors[index];
-                          final isSelected = selectedColorIndex == index;
-                          return GestureDetector(
-                            onTap: () {
-                              setModalState(() {
-                                selectedColorIndex = index;
-                              });
-                            },
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: isSelected
-                                    ? Border.all(
-                                        color: isDark
-                                            ? Colors.white
-                                            : AppColors.lightTextPrimary,
-                                        width: 2.5,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Exam Date Select Row
-                    GestureDetector(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: stateContext,
-                          initialDate:
-                              DateTime.now().add(const Duration(days: 30)),
-                          firstDate: DateTime.now(),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 365)),
-                        );
-                        if (picked != null) {
-                          setModalState(() {
-                            selectedDate = picked;
-                          });
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
-                        decoration: BoxDecoration(
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Add New Subject',
+                        style: AppTextStyles.headingSmall.copyWith(
                           color: isDark
-                              ? AppColors.darkBgStart
-                              : AppColors.lightBgStart,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder,
-                          ),
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Exam Date',
-                              style: TextStyle(
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.lightTextPrimary,
+                      ),
+                      const SizedBox(height: 16),
+                      // Subject Name Input
+                      TextField(
+                        controller: nameController,
+                        style: TextStyle(
+                          color:
+                              isDark ? Colors.white : AppColors.lightTextPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Enter subject name...',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Color dots selection
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(
+                          AppColors.subjectColors.length,
+                          (index) {
+                            final color = AppColors.subjectColors[index];
+                            final isSelected = selectedColorIndex == index;
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  selectedColorIndex = index;
+                                });
+                              },
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: isSelected
+                                      ? Border.all(
+                                          color: isDark
+                                              ? Colors.white
+                                              : AppColors.lightTextPrimary,
+                                          width: 2.5,
+                                        )
+                                      : null,
+                                ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Exam Date Select Row
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: stateContext,
+                            initialDate:
+                                DateTime.now().add(const Duration(days: 30)),
+                            firstDate: DateTime.now(),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (picked != null) {
+                            setModalState(() {
+                              selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkBgStart
+                                : AppColors.lightBgStart,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
                             ),
-                            const Spacer(),
-                            Text(
-                              selectedDate == null
-                                  ? 'Select Date'
-                                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                              style: TextStyle(
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
                                 color: isDark
                                     ? AppColors.darkTextSecondary
                                     : AppColors.lightTextSecondary,
+                                size: 18,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Text(
+                                'Exam Date',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.lightTextPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                selectedDate == null
+                                    ? 'Select Date'
+                                    : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Create Subject Button
-                    SecondaryButton(
-                      text: 'Add Subject',
-                      onPressed: () {
-                        final name = nameController.text.trim();
-                        if (name.isEmpty) return;
-
-                        context.read<SubjectsBloc>().add(
-                              AddSubjectEvent(
-                                name: name,
-                                color: AppColors.getSubjectColorByIndex(
-                                    selectedColorIndex),
-                                examDate: selectedDate,
-                              ),
-                            );
-                        Navigator.pop(modalContext);
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      // Create Subject Button
+                      SecondaryButton(
+                        text: 'Add Subject',
+                        onPressed: () {
+                          final name = nameController.text.trim();
+                          if (name.isEmpty) return;
+              
+                          context.read<SubjectsBloc>().add(
+                                AddSubjectEvent(
+                                  name: name,
+                                  color: AppColors.getSubjectColorByIndex(
+                                      selectedColorIndex),
+                                  examDate: selectedDate,
+                                ),
+                              );
+                          AppSnackbar.show(
+                            context,
+                            type: SnackbarType.success,
+                            title: 'Subject Added',
+                            message: '$name has been added to your plan.',
+                          );
+                          Navigator.pop(modalContext);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

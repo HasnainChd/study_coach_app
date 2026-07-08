@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import '../../../../core/config/api_config.dart';
 import '../entities/agenda_item.dart';
 import '../entities/subject.dart';
@@ -17,7 +16,8 @@ class GenerateStudyPlanUseCase {
   }) async {
     final subjects = await repository.getSubjects();
     if (subjects.isEmpty) {
-      throw ArgumentError('Please add at least one subject before generating a plan.');
+      throw ArgumentError(
+          'Please add at least one subject before generating a plan.');
     }
 
     // Sort subjects by exam date proximity (closer exams = higher priority)
@@ -31,8 +31,9 @@ class GenerateStudyPlanUseCase {
     });
 
     final subjectsWithPriority = sortedSubjects.map((s) {
-      final daysLeft = s.examDate != null ? s.examDate!.difference(now).inDays : null;
-      final examStr = daysLeft != null ? 'Exam in $daysLeft days' : 'No exam scheduled';
+      final daysLeft = s.examDate?.difference(now).inDays;
+      final examStr =
+          daysLeft != null ? 'Exam in $daysLeft days' : 'No exam scheduled';
       return '- ${s.name} ($examStr)';
     }).join('\n');
 
@@ -63,8 +64,8 @@ Provide specific, actionable study tasks rather than generic ones.
 
     final client = HttpClient();
     final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${ApiConfig.geminiApiKey}');
-    
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${ApiConfig.geminiApiKey}');
+
     final request = await client.postUrl(uri);
     request.headers.contentType = ContentType.json;
 
@@ -81,21 +82,23 @@ Provide specific, actionable study tasks rather than generic ones.
     request.write(body);
     final response = await request.close();
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to generate study plan: HTTP Status ${response.statusCode}');
-    }
-
     final responseBody = await response.transform(utf8.decoder).join();
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to generate study plan: HTTP Status ${response.statusCode}');
+    }
     final responseJson = jsonDecode(responseBody) as Map<String, dynamic>;
-    
+
     final candidates = responseJson['candidates'] as List?;
     if (candidates == null || candidates.isEmpty) {
       throw Exception('Invalid response from AI coach: No candidates found.');
     }
-    
+
     final rawText = candidates[0]['content']['parts'][0]['text'] as String?;
     if (rawText == null || rawText.trim().isEmpty) {
-      throw Exception('Invalid response from AI coach: Empty content returned.');
+      throw Exception(
+          'Invalid response from AI coach: Empty content returned.');
     }
 
     // Clean up markdown block if returned

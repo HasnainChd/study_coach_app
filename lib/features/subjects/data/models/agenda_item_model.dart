@@ -9,6 +9,7 @@ class AgendaItemModel extends AgendaItem {
     required super.durationMinutes,
     required super.tagColor,
     super.isCompleted,
+    super.hasEarnedXp,
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +20,7 @@ class AgendaItemModel extends AgendaItem {
       'durationMinutes': durationMinutes,
       'tagColorValue': tagColor.value,
       'isCompleted': isCompleted,
+      'hasEarnedXp': hasEarnedXp,
     };
   }
 
@@ -30,6 +32,7 @@ class AgendaItemModel extends AgendaItem {
       durationMinutes: map['durationMinutes'] as int,
       tagColor: Color(map['tagColorValue'] as int),
       isCompleted: map['isCompleted'] as bool? ?? false,
+      hasEarnedXp: map['hasEarnedXp'] as bool? ?? false,
     );
   }
 
@@ -41,6 +44,7 @@ class AgendaItemModel extends AgendaItem {
       durationMinutes: item.durationMinutes,
       tagColor: item.tagColor,
       isCompleted: item.isCompleted,
+      hasEarnedXp: item.hasEarnedXp,
     );
   }
 }

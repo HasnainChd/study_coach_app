@@ -44,6 +44,24 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     on<AddXpEvent>(_onAddXp);
   }
 
+  AgendaItem? getNextIncompleteItem(String? currentTaskTitle) {
+    for (final item in state.agendaItems) {
+      if (!item.isCompleted && item.title != currentTaskTitle) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  AgendaItem? get nextIncompleteItem {
+    for (final item in state.agendaItems) {
+      if (!item.isCompleted) {
+        return item;
+      }
+    }
+    return null;
+  }
+
   Future<void> _onLoadSubjects(
     LoadSubjectsEvent event,
     Emitter<SubjectsState> emit,
@@ -168,7 +186,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       );
 
       await addSubjectUseCase(subject);
-      
+
       final updatedSubjects = await getSubjectsUseCase();
       emit(state.copyWith(
         status: SubjectsStatus.success,
@@ -238,17 +256,36 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) async {
     try {
-      bool completedNow = false;
+      bool shouldAwardXp = false;
+      AgendaItem? targetItem;
+      AgendaItem? updatedTargetItem;
+
       final updatedAgenda = state.agendaItems.map((item) {
         if (item.id == event.id) {
+          targetItem = item;
           final nextCompleted = !item.isCompleted;
-          if (nextCompleted) {
-            completedNow = true;
+          bool nextHasEarnedXp = item.hasEarnedXp;
+          if (nextCompleted && !item.hasEarnedXp) {
+            shouldAwardXp = true;
+            nextHasEarnedXp = true;
           }
-          return item.copyWith(isCompleted: nextCompleted);
+          updatedTargetItem = item.copyWith(
+            isCompleted: nextCompleted,
+            hasEarnedXp: nextHasEarnedXp,
+          );
+          return updatedTargetItem!;
         }
         return item;
       }).toList();
+
+      if (targetItem != null) {
+        print('=== TOGGLE DEBUG ===');
+        print('Item ID: ${targetItem!.id}');
+        print('Item title: ${targetItem!.title}');
+        print('isCompleted BEFORE: ${targetItem!.isCompleted}');
+        print('hasEarnedXp BEFORE: ${targetItem!.hasEarnedXp}');
+      }
+
       await repository.saveAgendaItems(updatedAgenda);
 
       var currentXp = state.xpProgress;
@@ -256,7 +293,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       var currentStreak = state.streak;
       var lastClaimed = state.lastStreakClaimedDate;
 
-      if (completedNow) {
+      if (shouldAwardXp) {
         // Add 15% XP for completing tasks
         currentXp += 0.15;
         if (currentXp >= 1.0) {
@@ -283,6 +320,15 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         streak: currentStreak,
         lastStreakClaimedDate: lastClaimed,
       ));
+
+      if (updatedTargetItem != null) {
+        final xpAwarded = shouldAwardXp ? 0.15 : 0.0;
+        print('isCompleted AFTER: ${updatedTargetItem!.isCompleted}');
+        print('hasEarnedXp AFTER: ${updatedTargetItem!.hasEarnedXp}');
+        print('XP awarded this tap: ${xpAwarded}');
+        print('Current XP progress: ${state.xpProgress}');
+        print('====================');
+      }
     } catch (_) {}
   }
 
@@ -315,7 +361,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         preferredTime: state.preferredTime,
       );
       await repository.saveAgendaItems(agendaItems);
-      
+
       // Persist that onboarding is completed
       await repository.saveHasCompletedOnboarding(true);
 
