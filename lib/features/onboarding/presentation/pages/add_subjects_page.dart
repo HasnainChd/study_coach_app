@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -98,6 +99,12 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
     context.read<SubjectsBloc>().add(
           AddSubjectEvent(name: name, color: color, examDate: _selectedDate),
         );
+    AppSnackbar.show(
+      context,
+      type: SnackbarType.success,
+      title: 'Subject Added',
+      message: '$name has been added to your plan.',
+    );
     _nameController.clear();
     setState(() {
       _selectedDate = null;
@@ -114,11 +121,11 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
       body: BlocListener<SubjectsBloc, SubjectsState>(
         listener: (context, state) {
           if (state.status == SubjectsStatus.failure && state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: AppColors.subjectPink,
-              ),
+            AppSnackbar.show(
+              context,
+              type: SnackbarType.error,
+              title: 'Error',
+              message: state.errorMessage!,
             );
           }
         },
@@ -453,6 +460,12 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                                       RemoveSubjectEvent(
                                                           subject.id),
                                                     );
+                                                AppSnackbar.show(
+                                                  context,
+                                                  type: SnackbarType.warning,
+                                                  title: 'Subject Removed',
+                                                  message: 'Subject has been removed.',
+                                                );
                                               },
                                             ),
                                             const SizedBox(width: 8),
@@ -481,12 +494,11 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                       text: 'Continue',
                       onPressed: () {
                         if (state.subjects.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Please add at least one subject to continue'),
-                              backgroundColor: AppColors.subjectPink,
-                            ),
+                          AppSnackbar.show(
+                            context,
+                            type: SnackbarType.error,
+                            title: 'No Subjects Added',
+                            message: 'Please add at least one subject before generating your plan.',
                           );
                           return;
                         }

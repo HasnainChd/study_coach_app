@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
+import 'core/theme/app_theme.dart';
 import 'features/bloc/chat_bloc.dart';
 import 'features/bloc/navigation_bloc.dart';
 import 'features/bloc/subjects_bloc.dart';
@@ -14,17 +15,17 @@ import 'features/focus/presentation/pages/focus_timer_page.dart';
 import 'features/onboarding/presentation/pages/add_subjects_page.dart';
 import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
 import 'features/onboarding/presentation/pages/welcome_page.dart';
-
 import 'features/subjects/data/datasources/subject_local_data_source.dart';
 import 'features/subjects/data/repositories/subject_repository_impl.dart';
 import 'features/subjects/domain/repositories/subject_repository.dart';
 import 'features/subjects/domain/usecases/add_subject_usecase.dart';
+import 'features/subjects/domain/usecases/generate_study_plan_usecase.dart';
 import 'features/subjects/domain/usecases/get_subjects_usecase.dart';
 import 'features/subjects/domain/usecases/remove_subject_usecase.dart';
-import 'features/subjects/domain/usecases/generate_study_plan_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
   final box = await Hive.openBox('study_coach_box');
 
@@ -37,7 +38,8 @@ void main() async {
 
   // Read onboarding complete flag
   final hasCompletedOnboarding = await repository.getHasCompletedOnboarding();
-  final initialScreen = hasCompletedOnboarding ? AppScreen.dashboard : AppScreen.welcome;
+  final initialScreen =
+      hasCompletedOnboarding ? AppScreen.dashboard : AppScreen.welcome;
 
   runApp(MyApp(
     repository: repository,
@@ -119,7 +121,7 @@ class MyApp extends StatelessWidget {
   Widget _buildScreen(AppScreen screen) {
     switch (screen) {
       case AppScreen.welcome:
-        return const WelcomePage(
+        return WelcomePage(
           key: ValueKey('WelcomePage'),
         );
       case AppScreen.addSubjects:

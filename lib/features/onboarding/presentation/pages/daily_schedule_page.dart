@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -29,11 +30,29 @@ class DailySchedulePage extends StatelessWidget {
                 );
           } else if (state.status == SubjectsStatus.failure &&
               state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: AppColors.subjectPink,
-              ),
+            final errorMsg = state.errorMessage!;
+            String title = "Generation Failed";
+            String message = "Something went wrong. Please try again.";
+
+            if (errorMsg.contains("503")) {
+              title = "Service Busy";
+              message = "Gemini AI is overloaded. Wait 1 minute and try again.";
+            } else if (errorMsg.contains("429")) {
+              title = "Rate Limit Reached";
+              message = "Too many requests. Please wait a few minutes before generating your plan.";
+            } else if (errorMsg.contains("401") || errorMsg.contains("403")) {
+              title = "API Key Invalid";
+              message = "Check your Gemini API key in the app configuration.";
+            } else if (errorMsg.contains("least one subject") || errorMsg.contains("ArgumentError")) {
+              title = "No Subjects Added";
+              message = "Please add at least one subject before generating your plan.";
+            }
+
+            AppSnackbar.show(
+              context,
+              type: SnackbarType.error,
+              title: title,
+              message: message,
             );
           }
         },

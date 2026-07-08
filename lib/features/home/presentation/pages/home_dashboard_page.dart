@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 import '../../../bloc/theme_bloc.dart';
 import '../../../bloc/timer_bloc.dart';
-import '../../../subjects/presentation/bloc/subjects_event.dart';
-import '../../../subjects/presentation/bloc/subjects_state.dart';
 
 class HomeDashboardPage extends StatelessWidget {
   const HomeDashboardPage({super.key});
+
+  static final ValueNotifier<String?> userNameNotifier =
+      ValueNotifier<String?>(null);
+
+  static void loadName() {
+    if (userNameNotifier.value == null) {
+      SharedPreferences.getInstance().then((prefs) {
+        final name = prefs.getString('userName');
+        if (name != null) {
+          userNameNotifier.value = name;
+        }
+      });
+    }
+  }
 
   String _getFormattedDate() {
     final now = DateTime.now();
@@ -42,6 +56,19 @@ class HomeDashboardPage extends StatelessWidget {
       'DECEMBER'
     ];
     return '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+
+  String _getTimeBasedGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good afternoon';
+    } else if (hour >= 17 && hour < 22) {
+      return 'Good evening';
+    } else {
+      return 'Good night';
+    }
   }
 
   void _showStreakDetailsBottomSheet(
@@ -153,7 +180,8 @@ class HomeDashboardPage extends StatelessWidget {
                                   : (isDark
                                       ? AppColors.darkTextSecondary
                                       : AppColors.lightTextSecondary),
-                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                              fontWeight:
+                                  isToday ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -163,7 +191,8 @@ class HomeDashboardPage extends StatelessWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isChecked
-                                  ? AppColors.subjectGreen.withValues(alpha: 0.15)
+                                  ? AppColors.subjectGreen
+                                      .withValues(alpha: 0.15)
                                   : (isToday
                                       ? AppColors.primary.withValues(alpha: 0.1)
                                       : Colors.transparent),
@@ -205,13 +234,11 @@ class HomeDashboardPage extends StatelessWidget {
                       onPressed: () {
                         if (todayClaimed) return;
                         context.read<SubjectsBloc>().add(ClaimStreakEvent());
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                '🎉 Streak claimed! Awesome job keeping it up!'),
-                            backgroundColor: AppColors.subjectGreen,
-                            duration: Duration(seconds: 2),
-                          ),
+                        AppSnackbar.show(
+                          context,
+                          type: SnackbarType.success,
+                          title: 'Streak Claimed! 🎉',
+                          message: 'Awesome job keeping it up!',
                         );
                       },
                     ),
@@ -228,7 +255,9 @@ class HomeDashboardPage extends StatelessWidget {
                           : AppColors.lightBorder.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder,
                         width: 1.0,
                       ),
                     ),
@@ -267,12 +296,25 @@ class HomeDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    loadName();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: GradientBackground(
-        child: Padding(
+      body: BlocListener<SubjectsBloc, SubjectsState>(
+        listenWhen: (previous, current) =>
+            previous.status == SubjectsStatus.planGenerating &&
+            current.status == SubjectsStatus.planGenerated,
+        listener: (context, state) {
+          AppSnackbar.show(
+            context,
+            type: SnackbarType.success,
+            title: "Plan Ready!",
+            message: "Your study schedule has been generated.",
+          );
+        },
+        child: GradientBackground(
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,13 +336,22 @@ class HomeDashboardPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Good morning, Alex',
-                        style: AppTextStyles.headingMedium.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
-                        ),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: HomeDashboardPage.userNameNotifier,
+                        builder: (context, name, _) {
+                          final prefix = _getTimeBasedGreeting();
+                          final greeting = name != null && name.isNotEmpty
+                              ? '$prefix, $name'
+                              : '$prefix 👋';
+                          return Text(
+                            greeting,
+                            style: AppTextStyles.headingMedium.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -509,19 +560,25 @@ class HomeDashboardPage extends StatelessWidget {
                               Expanded(
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    // 1. Set specific countdown duration matching card minutes and start ticking
-                                    context.read<TimerBloc>().add(
-                                          StartTimerEvent(
-                                              durationSeconds:
-                                                  item.durationMinutes * 60),
-                                        );
-                                    // 2. Transition screen navigation
-                                    context.read<NavigationBloc>().add(
-                                          NavigateToScreenEvent(
-                                              AppScreen.focusTimer),
-                                        );
-                                  },
+                                  onTap: item.isCompleted
+                                      ? null
+                                      : () {
+                                          // 1. Set specific countdown duration matching card minutes and start ticking
+                                          context.read<TimerBloc>().add(
+                                                StartTimerEvent(
+                                                  durationSeconds:
+                                                      item.durationMinutes * 60,
+                                                  taskTitle: item.title,
+                                                  subjectName: item.tag,
+                                                  subjectColor: item.tagColor,
+                                                ),
+                                              );
+                                          // 2. Transition screen navigation
+                                          context.read<NavigationBloc>().add(
+                                                NavigateToScreenEvent(
+                                                    AppScreen.focusTimer),
+                                              );
+                                        },
                                   child: Padding(
                                     padding: const EdgeInsets.only(
                                         top: 16.0, bottom: 16.0, right: 16.0),
@@ -614,12 +671,13 @@ class HomeDashboardPage extends StatelessWidget {
                                             ],
                                           ),
                                         ),
-                                        Icon(
-                                          Icons.chevron_right_rounded,
-                                          color: isDark
-                                              ? AppColors.darkTextSecondary
-                                              : AppColors.lightTextSecondary,
-                                        ),
+                                        if (!item.isCompleted)
+                                          Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: isDark
+                                                ? AppColors.darkTextSecondary
+                                                : AppColors.lightTextSecondary,
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -638,10 +696,48 @@ class HomeDashboardPage extends StatelessWidget {
               // Quick Start Session Button
               BlocBuilder<SubjectsBloc, SubjectsState>(
                 builder: (context, state) {
-                  int focusMinutes = 25;
                   final uncompletedItems = state.agendaItems
                       .where((item) => !item.isCompleted)
                       .toList();
+
+                  final allCompleted =
+                      state.agendaItems.isNotEmpty && uncompletedItems.isEmpty;
+
+                  if (allCompleted) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.subjectGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.subjectGreen.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.subjectGreen,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'All done for today! Great work 🎉',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.subjectGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  int focusMinutes = 25;
                   if (uncompletedItems.isNotEmpty) {
                     focusMinutes = uncompletedItems.first.durationMinutes;
                   } else if (state.agendaItems.isNotEmpty) {
@@ -649,6 +745,12 @@ class HomeDashboardPage extends StatelessWidget {
                   } else {
                     focusMinutes = state.settings.pomodoroFocus;
                   }
+
+                  final activeItem = uncompletedItems.isNotEmpty
+                      ? uncompletedItems.first
+                      : (state.agendaItems.isNotEmpty
+                          ? state.agendaItems.first
+                          : null);
 
                   return PrimaryButton(
                     text: 'Quick Start Session ($focusMinutes min)',
@@ -661,7 +763,11 @@ class HomeDashboardPage extends StatelessWidget {
                       // Start focus timer matching active card duration
                       context.read<TimerBloc>().add(
                             StartTimerEvent(
-                                durationSeconds: focusMinutes * 60),
+                              durationSeconds: focusMinutes * 60,
+                              taskTitle: activeItem?.title,
+                              subjectName: activeItem?.tag,
+                              subjectColor: activeItem?.tagColor,
+                            ),
                           );
                       // Navigate to Focus Timer Page
                       context.read<NavigationBloc>().add(
@@ -674,6 +780,7 @@ class HomeDashboardPage extends StatelessWidget {
               const SizedBox(height: 16),
             ],
           ),
+        ),
         ),
       ),
     );
