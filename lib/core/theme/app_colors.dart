@@ -40,6 +40,20 @@ class AppColors {
     subjectYellow,
   ];
 
+  // Helper/Utility Colors for modals, buttons, and tests
+  static const Color darkOverlayBg = Color(0xFF1E1C38);
+  static const Color testButtonBgDark = Colors.white;
+  static const Color testButtonBgLight = Colors.black;
+  static const Color textRed = Color(0xFFFF3B30); // iOS style red for alert/debug actions
+
+  // Snackbar specific colors
+  static const Color snackbarBg = Color(0xFF1C1C35);
+  static const Color snackbarSuccess = Color(0xFF00D68F);
+  static const Color snackbarError = Color(0xFFFF4D6A);
+  static const Color snackbarWarning = Color(0xFFFF8C42);
+  static const Color snackbarInfo = Color(0xFF7C5CFC);
+  static const Color snackbarSubtitle = Color(0xFF9999BB);
+
   static Color getSubjectColorByIndex(int index) {
     return subjectColors[index % subjectColors.length];
   }
