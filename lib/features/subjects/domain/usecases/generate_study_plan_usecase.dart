@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import '../../../../core/config/api_config.dart';
 import '../entities/agenda_item.dart';
 import '../entities/subject.dart';
@@ -14,6 +15,12 @@ class GenerateStudyPlanUseCase {
     required int dailyMinutes,
     required String preferredTime,
   }) async {
+    if (ApiConfig.geminiApiKey.isEmpty) {
+      throw Exception(
+        'Gemini API key is missing. Add API_KEY to your .env file.',
+      );
+    }
+
     final subjects = await repository.getSubjects();
     if (subjects.isEmpty) {
       throw ArgumentError(
@@ -61,6 +68,9 @@ Return ONLY a raw JSON array of objects representing study tasks. Do not include
 ]
 Provide specific, actionable study tasks rather than generic ones.
 ''';
+
+    const maxRetries = 3;
+    const retryDelay = Duration(seconds: 2);
 
     final client = HttpClient();
     final uri = Uri.parse(
@@ -114,14 +124,31 @@ Provide specific, actionable study tasks rather than generic ones.
     }
     cleanText = cleanText.trim();
 
-    final List<dynamic> parsedList = jsonDecode(cleanText) as List<dynamic>;
+    final List<dynamic> parsedList;
+    try {
+      parsedList = jsonDecode(cleanText) as List<dynamic>;
+    } catch (e) {
+      throw Exception('AI coach returned invalid JSON. Please try again.');
+    }
+
+    if (parsedList.isEmpty) {
+      throw Exception(
+          'AI coach returned an empty study plan. Please try again.');
+    }
+
     final List<AgendaItem> agendaItems = [];
+
+    // Capture timestamp once so all generated IDs in this batch are unique
+    final batchTimestamp = DateTime.now().millisecondsSinceEpoch;
 
     for (var i = 0; i < parsedList.length; i++) {
       final itemMap = parsedList[i] as Map<String, dynamic>;
       final title = itemMap['title'] as String? ?? 'Study session';
       final subjectName = itemMap['subjectName'] as String? ?? '';
-      final duration = itemMap['durationMinutes'] as int? ?? 30;
+      // Use (as num?)?.toInt() to safely handle both int and double JSON values.
+      // Casting directly `as int?` throws a runtime error when Gemini returns
+      // a floating-point literal such as 45.0 instead of 45.
+      final duration = (itemMap['durationMinutes'] as num?)?.toInt() ?? 30;
 
       // Find matching subject to resolve color
       var matchedSubject = subjects.first;
@@ -134,7 +161,7 @@ Provide specific, actionable study tasks rather than generic ones.
 
       agendaItems.add(
         AgendaItem(
-          id: 'gen_${DateTime.now().millisecondsSinceEpoch}_$i',
+          id: 'gen_${batchTimestamp}_$i',
           title: title,
           tag: matchedSubject.name,
           durationMinutes: duration,

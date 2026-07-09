@@ -12,6 +12,18 @@ import '../../domain/usecases/generate_study_plan_usecase.dart';
 import 'subjects_event.dart';
 import 'subjects_state.dart';
 
+const int _dailyStudyMinMinutes = 15;
+const int _dailyStudyMaxMinutes = 240;
+const int _dailyStudySliderDivisions = 15;
+
+int normalizeDailyStudyMinutes(int minutes) {
+  final clamped = minutes.clamp(_dailyStudyMinMinutes, _dailyStudyMaxMinutes);
+  final step =
+      (_dailyStudyMaxMinutes - _dailyStudyMinMinutes) ~/ _dailyStudySliderDivisions;
+  final stepsFromMin = ((clamped - _dailyStudyMinMinutes) / step).round();
+  return _dailyStudyMinMinutes + (stepsFromMin * step);
+}
+
 class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   final SubjectRepository repository;
   final GetSubjectsUseCase getSubjectsUseCase;
@@ -42,6 +54,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     on<GenerateStudyPlanEvent>(_onGenerateStudyPlan);
     on<ClaimStreakEvent>(_onClaimStreak);
     on<AddXpEvent>(_onAddXp);
+    on<SelectAgendaItemEvent>(_onSelectAgendaItem);
   }
 
   AgendaItem? getNextIncompleteItem(String? currentTaskTitle) {
@@ -70,7 +83,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     try {
       var subjects = await getSubjectsUseCase();
       var agenda = await repository.getAgendaItems();
-      final dailyMinutes = await repository.getDailyStudyMinutes();
+      final dailyMinutes =
+          normalizeDailyStudyMinutes(await repository.getDailyStudyMinutes());
       final preferredTime = await repository.getPreferredTime();
       final notifications = await repository.getNotificationsEnabled();
       final settings = await repository.getSettingsPreferences();
@@ -162,6 +176,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         xpProgress: xpProgress,
         level: level,
         lastStreakClaimedDate: lastClaimed,
+        errorMessage: null,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -226,8 +241,9 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) async {
     try {
-      await repository.saveDailyStudyMinutes(event.minutes);
-      emit(state.copyWith(dailyStudyMinutes: event.minutes));
+      final minutes = normalizeDailyStudyMinutes(event.minutes);
+      await repository.saveDailyStudyMinutes(minutes);
+      emit(state.copyWith(dailyStudyMinutes: minutes));
     } catch (_) {}
   }
 
@@ -354,7 +370,10 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     GenerateStudyPlanEvent event,
     Emitter<SubjectsState> emit,
   ) async {
-    emit(state.copyWith(status: SubjectsStatus.planGenerating));
+    emit(state.copyWith(
+      status: SubjectsStatus.planGenerating,
+      errorMessage: null,
+    ));
     try {
       final agendaItems = await generateStudyPlanUseCase(
         dailyMinutes: state.dailyStudyMinutes,
@@ -375,11 +394,13 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,
         agendaItems: agendaItems,
+        errorMessage: null,
       ));
     } catch (e) {
+      final message = e.toString().replaceFirst('Exception: ', '');
       emit(state.copyWith(
         status: SubjectsStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: message,
       ));
     }
   }
@@ -416,5 +437,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       xpProgress: newXp,
       level: newLevel,
     ));
+  }
+
+  void _onSelectAgendaItem(
+    SelectAgendaItemEvent event,
+    Emitter<SubjectsState> emit,
+  ) {
+    emit(state.copyWith(selectedAgendaItemId: event.id));
   }
 }

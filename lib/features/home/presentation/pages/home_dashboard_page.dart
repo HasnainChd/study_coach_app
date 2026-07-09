@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/widgets/app_snackbar.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 import '../../../bloc/theme_bloc.dart';
@@ -315,472 +315,482 @@ class HomeDashboardPage extends StatelessWidget {
         },
         child: GradientBackground(
           child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getFormattedDate(),
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
-                          fontSize: 12,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getFormattedDate(),
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                            fontSize: 12,
+                          ),
                         ),
+                        const SizedBox(height: 4),
+                        ValueListenableBuilder<String?>(
+                          valueListenable: HomeDashboardPage.userNameNotifier,
+                          builder: (context, name, _) {
+                            final prefix = _getTimeBasedGreeting();
+                            final greeting = name != null && name.isNotEmpty
+                                ? '$prefix, $name'
+                                : '$prefix 👋';
+                            return Text(
+                              greeting,
+                              style: AppTextStyles.headingMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Dark/Light toggle
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
+                          width: 1.5,
+                        ),
+                        color: isDark
+                            ? AppColors.darkCardBg
+                            : AppColors.lightCardBg,
                       ),
-                      const SizedBox(height: 4),
-                      ValueListenableBuilder<String?>(
-                        valueListenable: HomeDashboardPage.userNameNotifier,
-                        builder: (context, name, _) {
-                          final prefix = _getTimeBasedGreeting();
-                          final greeting = name != null && name.isNotEmpty
-                              ? '$prefix, $name'
-                              : '$prefix 👋';
-                          return Text(
-                            greeting,
-                            style: AppTextStyles.headingMedium.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          );
+                      child: IconButton(
+                        icon: Icon(
+                          isDark
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.lightTextPrimary,
+                        ),
+                        onPressed: () {
+                          context.read<ThemeBloc>().add(ToggleThemeEvent());
                         },
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Dark/Light toggle
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
-                        width: 1.5,
-                      ),
-                      color:
-                          isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
                     ),
-                    child: IconButton(
-                      icon: Icon(
-                        isDark
-                            ? Icons.light_mode_outlined
-                            : Icons.dark_mode_outlined,
-                        color:
-                            isDark ? Colors.white : AppColors.lightTextPrimary,
-                      ),
-                      onPressed: () {
-                        context.read<ThemeBloc>().add(ToggleThemeEvent());
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Streak Card wrapped in BlocBuilder for real-time reactivity
-              BlocBuilder<SubjectsBloc, SubjectsState>(
-                builder: (context, state) {
-                  return GestureDetector(
-                    onTap: () {
-                      _showStreakDetailsBottomSheet(context, isDark, state);
-                    },
-                    child: GlassCard(
-                      child: Row(
-                        children: [
-                          // Flame icon container
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFFFECE5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFF8551)
-                                      .withValues(alpha: 0.2),
-                                  blurRadius: 12,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.local_fire_department_rounded,
-                                color: Color(0xFFFF5100),
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Streak text and progress
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${state.streak} Day Streak',
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: isDark
-                                        ? AppColors.darkTextPrimary
-                                        : AppColors.lightTextPrimary,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Level ${state.level} Scholar',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.subjectGreen,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                // XP progress indicators
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'XP PROGRESS',
-                                      style: AppTextStyles.labelSmall.copyWith(
-                                        color: isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.lightTextSecondary,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(state.xpProgress * 100).toInt()}%',
-                                      style: AppTextStyles.labelSmall.copyWith(
-                                        color: isDark
-                                            ? AppColors.darkTextPrimary
-                                            : AppColors.lightTextPrimary,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: state.xpProgress,
-                                    backgroundColor: AppColors.darkBorder,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                            AppColors.primary),
-                                    minHeight: 6,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Today's Agenda header
-              Text(
-                "Today's Agenda",
-                style: AppTextStyles.headingSmall.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-              // Agenda list
-              Expanded(
-                child: BlocBuilder<SubjectsBloc, SubjectsState>(
+                // Streak Card wrapped in BlocBuilder for real-time reactivity
+                BlocBuilder<SubjectsBloc, SubjectsState>(
                   builder: (context, state) {
-                    final items = state.agendaItems;
-                    return ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkCardBg
-                                : AppColors.lightCardBg,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: item.isCompleted
-                                  ? AppColors.subjectGreen
-                                      .withValues(alpha: 0.4)
-                                  : (isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightBorder),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              // Checkbox Circle (wrapped in GestureDetector to toggle checklist state)
-                              GestureDetector(
-                                onTap: () {
-                                  context.read<SubjectsBloc>().add(
-                                        ToggleAgendaItemEvent(item.id),
-                                      );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Icon(
-                                    item.isCompleted
-                                        ? Icons.check_circle_rounded
-                                        : Icons.radio_button_unchecked_rounded,
-                                    color: item.isCompleted
-                                        ? AppColors.subjectGreen
-                                        : (isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.lightTextSecondary),
-                                    size: 24,
+                    return GestureDetector(
+                      onTap: () {
+                        _showStreakDetailsBottomSheet(context, isDark, state);
+                      },
+                      child: GlassCard(
+                        child: Row(
+                          children: [
+                            // Flame icon container
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFFFFECE5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF8551)
+                                        .withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
                                   ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.local_fire_department_rounded,
+                                  color: Color(0xFFFF5100),
+                                  size: 32,
                                 ),
                               ),
-                              // Rest of Card Details (wrapped in GestureDetector to launch Custom Duration Timer)
-                              Expanded(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: item.isCompleted
-                                      ? null
-                                      : () {
-                                          // 1. Set specific countdown duration matching card minutes and start ticking
-                                          context.read<TimerBloc>().add(
-                                                StartTimerEvent(
-                                                  durationSeconds:
-                                                      item.durationMinutes * 60,
-                                                  taskTitle: item.title,
-                                                  subjectName: item.tag,
-                                                  subjectColor: item.tagColor,
-                                                ),
-                                              );
-                                          // 2. Transition screen navigation
-                                          context.read<NavigationBloc>().add(
-                                                NavigateToScreenEvent(
-                                                    AppScreen.focusTimer),
-                                              );
-                                        },
+                            ),
+                            const SizedBox(width: 16),
+                            // Streak text and progress
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${state.streak} Day Streak',
+                                    style: AppTextStyles.headingSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.lightTextPrimary,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Level ${state.level} Scholar',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.subjectGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // XP progress indicators
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'XP PROGRESS',
+                                        style:
+                                            AppTextStyles.labelSmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.darkTextSecondary
+                                              : AppColors.lightTextSecondary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${(state.xpProgress * 100).toInt()}%',
+                                        style:
+                                            AppTextStyles.labelSmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.darkTextPrimary
+                                              : AppColors.lightTextPrimary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: state.xpProgress,
+                                      backgroundColor: AppColors.darkBorder,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                              AppColors.primary),
+                                      minHeight: 6,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+
+                // Today's Agenda header
+                Text(
+                  "Today's Agenda",
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Agenda list
+                Expanded(
+                  child: BlocBuilder<SubjectsBloc, SubjectsState>(
+                    builder: (context, state) {
+                      final items = state.agendaItems;
+                      return ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkCardBg
+                                  : AppColors.lightCardBg,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: item.isCompleted
+                                    ? AppColors.subjectGreen
+                                        .withValues(alpha: 0.4)
+                                    : (isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Checkbox Circle (wrapped in GestureDetector to toggle checklist state)
+                                GestureDetector(
+                                  onTap: () {
+                                    context.read<SubjectsBloc>().add(
+                                          ToggleAgendaItemEvent(item.id),
+                                        );
+                                  },
                                   child: Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 16.0, bottom: 16.0, right: 16.0),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                item.title,
-                                                style: AppTextStyles.bodyMedium
-                                                    .copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: item.isCompleted
-                                                      ? (isDark
-                                                          ? AppColors
-                                                              .darkTextSecondary
-                                                              .withValues(
-                                                                  alpha: 0.6)
-                                                          : AppColors
-                                                              .lightTextSecondary
-                                                              .withValues(
-                                                                  alpha: 0.6))
-                                                      : (isDark
-                                                          ? AppColors
-                                                              .darkTextPrimary
-                                                          : AppColors
-                                                              .lightTextPrimary),
-                                                  decoration: item.isCompleted
-                                                      ? TextDecoration
-                                                          .lineThrough
-                                                      : null,
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Icon(
+                                      item.isCompleted
+                                          ? Icons.check_circle_rounded
+                                          : Icons
+                                              .radio_button_unchecked_rounded,
+                                      color: item.isCompleted
+                                          ? AppColors.subjectGreen
+                                          : (isDark
+                                              ? AppColors.darkTextSecondary
+                                              : AppColors.lightTextSecondary),
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                                // Rest of Card Details (wrapped in GestureDetector to launch Custom Duration Timer)
+                                Expanded(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: item.isCompleted
+                                        ? null
+                                        : () {
+                                            // 1. Set specific countdown duration matching card minutes and start ticking
+                                            context.read<TimerBloc>().add(
+                                                  StartTimerEvent(
+                                                    durationSeconds:
+                                                        item.durationMinutes *
+                                                            60,
+                                                    taskTitle: item.title,
+                                                    subjectName: item.tag,
+                                                    subjectColor: item.tagColor,
+                                                  ),
+                                                );
+                                            // 2. Transition screen navigation
+                                            context.read<NavigationBloc>().add(
+                                                  NavigateToScreenEvent(
+                                                      AppScreen.focusTimer),
+                                                );
+                                          },
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 16.0, bottom: 16.0, right: 16.0),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item.title,
+                                                  style: AppTextStyles
+                                                      .bodyMedium
+                                                      .copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: item.isCompleted
+                                                        ? (isDark
+                                                            ? AppColors
+                                                                .darkTextSecondary
+                                                                .withValues(
+                                                                    alpha: 0.6)
+                                                            : AppColors
+                                                                .lightTextSecondary
+                                                                .withValues(
+                                                                    alpha: 0.6))
+                                                        : (isDark
+                                                            ? AppColors
+                                                                .darkTextPrimary
+                                                            : AppColors
+                                                                .lightTextPrimary),
+                                                    decoration: item.isCompleted
+                                                        ? TextDecoration
+                                                            .lineThrough
+                                                        : null,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2),
-                                                    decoration: BoxDecoration(
-                                                      color: item.tagColor
-                                                          .withValues(
-                                                              alpha: 0.12),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
-                                                    ),
-                                                    child: Text(
-                                                      item.tag,
-                                                      style: AppTextStyles
-                                                          .bodySmall
-                                                          .copyWith(
-                                                        color: item.tagColor,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 10,
+                                                const SizedBox(height: 8),
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: item.tagColor
+                                                            .withValues(
+                                                                alpha: 0.12),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        item.tag,
+                                                        style: AppTextStyles
+                                                            .bodySmall
+                                                            .copyWith(
+                                                          color: item.tagColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 10,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Icon(
-                                                    Icons.schedule_rounded,
-                                                    size: 14,
-                                                    color: isDark
-                                                        ? AppColors
-                                                            .darkTextSecondary
-                                                        : AppColors
-                                                            .lightTextSecondary,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    '${item.durationMinutes} min',
-                                                    style: AppTextStyles
-                                                        .bodySmall
-                                                        .copyWith(
+                                                    const SizedBox(width: 12),
+                                                    Icon(
+                                                      Icons.schedule_rounded,
+                                                      size: 14,
                                                       color: isDark
                                                           ? AppColors
                                                               .darkTextSecondary
                                                           : AppColors
                                                               .lightTextSecondary,
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${item.durationMinutes} min',
+                                                      style: AppTextStyles
+                                                          .bodySmall
+                                                          .copyWith(
+                                                        color: isDark
+                                                            ? AppColors
+                                                                .darkTextSecondary
+                                                            : AppColors
+                                                                .lightTextSecondary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        if (!item.isCompleted)
-                                          Icon(
-                                            Icons.chevron_right_rounded,
-                                            color: isDark
-                                                ? AppColors.darkTextSecondary
-                                                : AppColors.lightTextSecondary,
-                                          ),
-                                      ],
+                                          if (!item.isCompleted)
+                                            Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors
+                                                      .lightTextSecondary,
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Quick Start Session Button
+                BlocBuilder<SubjectsBloc, SubjectsState>(
+                  builder: (context, state) {
+                    final uncompletedItems = state.agendaItems
+                        .where((item) => !item.isCompleted)
+                        .toList();
+
+                    final allCompleted = state.agendaItems.isNotEmpty &&
+                        uncompletedItems.isEmpty;
+
+                    if (allCompleted) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.subjectGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color:
+                                AppColors.subjectGreen.withValues(alpha: 0.3),
+                            width: 1.5,
                           ),
-                        );
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.subjectGreen,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'All done for today! Great work 🎉',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.subjectGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    int focusMinutes = 25;
+                    if (uncompletedItems.isNotEmpty) {
+                      focusMinutes = uncompletedItems.first.durationMinutes;
+                    } else if (state.agendaItems.isNotEmpty) {
+                      focusMinutes = state.agendaItems.first.durationMinutes;
+                    } else {
+                      focusMinutes = state.settings.pomodoroFocus;
+                    }
+
+                    final activeItem = uncompletedItems.isNotEmpty
+                        ? uncompletedItems.first
+                        : (state.agendaItems.isNotEmpty
+                            ? state.agendaItems.first
+                            : null);
+
+                    return PrimaryButton(
+                      text: 'Quick Start Session ($focusMinutes min)',
+                      icon: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        // Start focus timer matching active card duration
+                        context.read<TimerBloc>().add(
+                              StartTimerEvent(
+                                durationSeconds: focusMinutes * 60,
+                                taskTitle: activeItem?.title,
+                                subjectName: activeItem?.tag,
+                                subjectColor: activeItem?.tagColor,
+                              ),
+                            );
+                        // Navigate to Focus Timer Page
+                        context.read<NavigationBloc>().add(
+                              NavigateToScreenEvent(AppScreen.focusTimer),
+                            );
                       },
                     );
                   },
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Quick Start Session Button
-              BlocBuilder<SubjectsBloc, SubjectsState>(
-                builder: (context, state) {
-                  final uncompletedItems = state.agendaItems
-                      .where((item) => !item.isCompleted)
-                      .toList();
-
-                  final allCompleted =
-                      state.agendaItems.isNotEmpty && uncompletedItems.isEmpty;
-
-                  if (allCompleted) {
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.subjectGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.subjectGreen.withValues(alpha: 0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.subjectGreen,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'All done for today! Great work 🎉',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.subjectGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  int focusMinutes = 25;
-                  if (uncompletedItems.isNotEmpty) {
-                    focusMinutes = uncompletedItems.first.durationMinutes;
-                  } else if (state.agendaItems.isNotEmpty) {
-                    focusMinutes = state.agendaItems.first.durationMinutes;
-                  } else {
-                    focusMinutes = state.settings.pomodoroFocus;
-                  }
-
-                  final activeItem = uncompletedItems.isNotEmpty
-                      ? uncompletedItems.first
-                      : (state.agendaItems.isNotEmpty
-                          ? state.agendaItems.first
-                          : null);
-
-                  return PrimaryButton(
-                    text: 'Quick Start Session ($focusMinutes min)',
-                    icon: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      // Start focus timer matching active card duration
-                      context.read<TimerBloc>().add(
-                            StartTimerEvent(
-                              durationSeconds: focusMinutes * 60,
-                              taskTitle: activeItem?.title,
-                              subjectName: activeItem?.tag,
-                              subjectColor: activeItem?.tagColor,
-                            ),
-                          );
-                      // Navigate to Focus Timer Page
-                      context.read<NavigationBloc>().add(
-                            NavigateToScreenEvent(AppScreen.focusTimer),
-                          );
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

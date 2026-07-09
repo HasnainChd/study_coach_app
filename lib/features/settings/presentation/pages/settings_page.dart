@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/gradient_background.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 import '../../../home/presentation/pages/home_dashboard_page.dart';
@@ -20,7 +21,8 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
+          backgroundColor:
+              isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
           title: Text(
             'Edit Name',
             style: TextStyle(
@@ -86,7 +88,8 @@ class SettingsPage extends StatelessWidget {
             final prefs = state.settings;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -96,18 +99,24 @@ class SettingsPage extends StatelessWidget {
                       IconButton(
                         icon: Icon(
                           Icons.arrow_back_rounded,
-                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.lightTextPrimary,
                         ),
                         onPressed: () {
                           // Go back to Home tab (index 0)
-                          context.read<NavigationBloc>().add(SwitchDashboardTabEvent(0));
+                          context
+                              .read<NavigationBloc>()
+                              .add(SwitchDashboardTabEvent(0));
                         },
                       ),
                       const Spacer(),
                       Text(
                         'Settings',
                         style: AppTextStyles.headingSmall.copyWith(
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
                         ),
                       ),
                       const Spacer(),
@@ -118,7 +127,9 @@ class SettingsPage extends StatelessWidget {
                           color: AppColors.primary,
                         ),
                         onPressed: () {
-                          context.read<NavigationBloc>().add(SwitchDashboardTabEvent(0));
+                          context
+                              .read<NavigationBloc>()
+                              .add(SwitchDashboardTabEvent(0));
                         },
                       ),
                     ],
@@ -130,8 +141,12 @@ class SettingsPage extends StatelessWidget {
                     child: ValueListenableBuilder<String?>(
                       valueListenable: HomeDashboardPage.userNameNotifier,
                       builder: (context, name, _) {
-                        final displayName = name != null && name.isNotEmpty ? name : 'Study Coach User';
-                        final initial = displayName.trim().isNotEmpty ? displayName.trim()[0].toUpperCase() : 'S';
+                        final displayName = name != null && name.isNotEmpty
+                            ? name
+                            : 'Study Coach User';
+                        final initial = displayName.trim().isNotEmpty
+                            ? displayName.trim()[0].toUpperCase()
+                            : 'S';
 
                         return GlassCard(
                           padding: const EdgeInsets.all(24),
@@ -163,7 +178,8 @@ class SettingsPage extends StatelessWidget {
                                     right: 0,
                                     child: GestureDetector(
                                       onTap: () {
-                                        _showEditNameDialog(context, name ?? '');
+                                        _showEditNameDialog(
+                                            context, name ?? '');
                                       },
                                       child: Container(
                                         width: 26,
@@ -188,14 +204,18 @@ class SettingsPage extends StatelessWidget {
                               Text(
                                 displayName,
                                 style: AppTextStyles.headingSmall.copyWith(
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Tap to edit name',
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
                                 ),
                               ),
                             ],
@@ -210,14 +230,17 @@ class SettingsPage extends StatelessWidget {
                   Text(
                     'STUDY PREFERENCES',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                       letterSpacing: 1.0,
                     ),
                   ),
                   const SizedBox(height: 12),
                   // Preferences Card
                   GlassCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
                     child: Column(
                       children: [
                         _buildChoiceSelector(
@@ -227,7 +250,8 @@ class SettingsPage extends StatelessWidget {
                           selectedValue: prefs.pomodoroFocus,
                           onSelected: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(pomodoroFocus: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      pomodoroFocus: val),
                                 );
                           },
                           isDark: isDark,
@@ -243,7 +267,8 @@ class SettingsPage extends StatelessWidget {
                           selectedValue: prefs.shortBreak,
                           onSelected: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(shortBreak: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      shortBreak: val),
                                 );
                           },
                           isDark: isDark,
@@ -259,7 +284,8 @@ class SettingsPage extends StatelessWidget {
                           selectedValue: prefs.longBreak,
                           onSelected: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(longBreak: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      longBreak: val),
                                 );
                           },
                           isDark: isDark,
@@ -273,14 +299,17 @@ class SettingsPage extends StatelessWidget {
                   Text(
                     'NOTIFICATIONS',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                       letterSpacing: 1.0,
                     ),
                   ),
                   const SizedBox(height: 12),
                   // Notifications settings Card
                   GlassCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Column(
                       children: [
                         _buildSwitchRow(
@@ -288,7 +317,8 @@ class SettingsPage extends StatelessWidget {
                           value: prefs.dailyReminder,
                           onChanged: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(dailyReminder: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      dailyReminder: val),
                                 );
                           },
                         ),
@@ -297,7 +327,8 @@ class SettingsPage extends StatelessWidget {
                           value: prefs.streakAlerts,
                           onChanged: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(streakAlerts: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      streakAlerts: val),
                                 );
                           },
                         ),
@@ -306,7 +337,8 @@ class SettingsPage extends StatelessWidget {
                           value: prefs.studyTips,
                           onChanged: (val) {
                             context.read<SubjectsBloc>().add(
-                                  UpdateSettingsPreferencesEvent(studyTips: val),
+                                  UpdateSettingsPreferencesEvent(
+                                      studyTips: val),
                                 );
                           },
                         ),
@@ -337,7 +369,8 @@ class SettingsPage extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.bodyLarge.copyWith(
-            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+            color:
+                isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -354,9 +387,12 @@ class SettingsPage extends StatelessWidget {
               return GestureDetector(
                 onTap: () => onSelected(option),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isOptionSelected ? AppColors.primary : Colors.transparent,
+                    color: isOptionSelected
+                        ? AppColors.primary
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -364,7 +400,9 @@ class SettingsPage extends StatelessWidget {
                     style: TextStyle(
                       color: isOptionSelected
                           ? Colors.white
-                          : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                          : (isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary),
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),

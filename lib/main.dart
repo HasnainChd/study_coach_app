@@ -10,6 +10,9 @@ import 'features/bloc/navigation_bloc.dart';
 import 'features/bloc/subjects_bloc.dart';
 import 'features/bloc/theme_bloc.dart';
 import 'features/bloc/timer_bloc.dart';
+import 'features/chat/data/datasources/chat_local_data_source.dart';
+import 'features/chat/data/repositories/chat_repository_impl.dart';
+import 'features/chat/domain/repositories/chat_repository.dart';
 import 'features/dashboard/presentation/pages/dashboard_shell.dart';
 import 'features/focus/presentation/pages/focus_timer_page.dart';
 import 'features/onboarding/presentation/pages/add_subjects_page.dart';
@@ -17,17 +20,24 @@ import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
 import 'features/onboarding/presentation/pages/welcome_page.dart';
 import 'features/subjects/data/datasources/subject_local_data_source.dart';
 import 'features/subjects/data/repositories/subject_repository_impl.dart';
+
 import 'features/subjects/domain/repositories/subject_repository.dart';
 import 'features/subjects/domain/usecases/add_subject_usecase.dart';
 import 'features/subjects/domain/usecases/generate_study_plan_usecase.dart';
 import 'features/subjects/domain/usecases/get_subjects_usecase.dart';
 import 'features/subjects/domain/usecases/remove_subject_usecase.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
+
+  // Main app data box (subjects, agenda, settings, gamification)
   final box = await Hive.openBox('study_coach_box');
+
+  // Dedicated box for chat message history
+  final chatBox = await Hive.openBox('chat_messages_box');
 
   // Initialize notifications service
   final notificationService = NotificationService();
@@ -36,6 +46,10 @@ void main() async {
   final localDataSource = SubjectLocalDataSourceImpl(box);
   final repository = SubjectRepositoryImpl(localDataSource);
 
+  // Chat persistence layer
+  final chatLocalDataSource = ChatLocalDataSourceImpl(chatBox);
+  final chatRepository = ChatRepositoryImpl(chatLocalDataSource);
+
   // Read onboarding complete flag
   final hasCompletedOnboarding = await repository.getHasCompletedOnboarding();
   final initialScreen =
@@ -43,17 +57,21 @@ void main() async {
 
   runApp(MyApp(
     repository: repository,
+    chatRepository: chatRepository,
     initialScreen: initialScreen,
   ));
 }
 
+
 class MyApp extends StatelessWidget {
   final SubjectRepository repository;
+  final ChatRepository chatRepository;
   final AppScreen initialScreen;
 
   const MyApp({
     super.key,
     required this.repository,
+    required this.chatRepository,
     required this.initialScreen,
   });
 
@@ -75,8 +93,16 @@ class MyApp extends StatelessWidget {
           )..add(LoadSubjectsEvent()),
         ),
         BlocProvider<TimerBloc>(create: (context) => TimerBloc()),
-        BlocProvider<ChatBloc>(create: (context) => ChatBloc()),
+        // ChatBloc reads the current SubjectsBloc state so it can build a
+        // context-aware system prompt using real subjects / agenda / gamification.
+        BlocProvider<ChatBloc>(
+          create: (context) => ChatBloc(
+            chatRepository: chatRepository,
+            initialSubjectsState: context.read<SubjectsBloc>().state,
+          ),
+        ),
       ],
+
       child: BlocBuilder<ThemeBloc, ThemeMode>(
         builder: (context, themeMode) {
           return MaterialApp(

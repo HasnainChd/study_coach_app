@@ -1,11 +1,12 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/gradient_background.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/timer_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
@@ -46,303 +47,321 @@ class FocusTimerPage extends StatelessWidget {
             if (taskTitle != null) {
               final subjectsBloc = context.read<SubjectsBloc>();
               final agendaItems = subjectsBloc.state.agendaItems;
-              
+
               // Find incomplete item with matching title
               final matchingItemIndex = agendaItems.indexWhere(
                 (item) => item.title == taskTitle && !item.isCompleted,
               );
               if (matchingItemIndex != -1) {
-                subjectsBloc.add(ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
+                subjectsBloc.add(
+                    ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
               }
             }
           },
           child: BlocBuilder<TimerBloc, TimerState>(
             builder: (context, state) {
-            return Stack(
-              children: [
-                Column(
-                  children: [
-                    // Top navigation bar with back arrow
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_back_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.lightTextPrimary,
-                            ),
-                            onPressed: () {
-                              // Redirect back to dashboard container (which displays Home tab index 0)
-                              context.read<NavigationBloc>().add(
-                                    NavigateToScreenEvent(AppScreen.dashboard),
-                                  );
-                            },
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ),
-
-                    // Session context & indicator dots
-                    Text(
-                      'Focus Session ${state.sessionNumber} of 4',
-                      style: AppTextStyles.headingSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Session dots row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(4, (index) {
-                        final isActive = index == (state.sessionNumber - 1);
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? AppColors.primary
-                                : (isDark
-                                    ? AppColors.darkBorder
-                                    : AppColors.lightBorder),
-                            shape: BoxShape.circle,
-                          ),
-                        );
-                      }),
-                    ),
-
-                    const Spacer(),
-
-                    // Subject tag chip & Task title
-                    if (state.subjectName != null || state.taskTitle != null) ...[
-                      if (state.subjectName != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (state.subjectColor ?? AppColors.primary)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            state.subjectName!,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: state.subjectColor ?? AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      if (state.taskTitle != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                          child: Text(
-                            state.taskTitle!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.headingSmall.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const Spacer(),
-                    ],
-
-                    // Large central timer dial
-                    Center(
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark ? const Color(0xFF13122B) : Colors.white,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 4.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary
-                                  .withValues(alpha: isDark ? 0.35 : 0.15),
-                              blurRadius: 36,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      // Top navigation bar with back arrow
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 12.0),
+                        child: Row(
                           children: [
-                            Text(
-                              _formatDuration(state.remainingSeconds),
-                              style: TextStyle(
-                                fontSize: 54.0,
-                                fontWeight: FontWeight.bold,
+                            IconButton(
+                              icon: Icon(
+                                Icons.arrow_back_rounded,
                                 color: isDark
                                     ? Colors.white
                                     : AppColors.lightTextPrimary,
-                                letterSpacing: -1.0,
                               ),
+                              onPressed: () {
+                                // Redirect back to dashboard container (which displays Home tab index 0)
+                                context.read<NavigationBloc>().add(
+                                      NavigateToScreenEvent(
+                                          AppScreen.dashboard),
+                                    );
+                              },
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              state.status == TimerStatus.onBreak ? 'BREAK' : 'POMODORO',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: state.status == TimerStatus.onBreak
-                                    ? AppColors.subjectGreen
-                                    : (isDark
-                                        ? AppColors.darkTextSecondary
-                                        : AppColors.lightTextSecondary),
-                                letterSpacing: 1.5,
-                                fontWeight: state.status == TimerStatus.onBreak
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
+                            const Spacer(),
                           ],
                         ),
                       ),
-                    ),
 
-                    const Spacer(),
+                      // Session context & indicator dots
+                      Text(
+                        'Focus Session ${state.sessionNumber} of 4',
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Session dots row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(4, (index) {
+                          final isActive = index == (state.sessionNumber - 1);
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? AppColors.primary
+                                  : (isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBorder),
+                              shape: BoxShape.circle,
+                            ),
+                          );
+                        }),
+                      ),
 
-                    // Play / Pause & Skip Buttons
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 56.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
+                      const Spacer(),
+
+                      // Subject tag chip & Task title
+                      if (state.subjectName != null ||
+                          state.taskTitle != null) ...[
+                        if (state.subjectName != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (state.subjectColor ?? AppColors.primary)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              state.subjectName!,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: state.subjectColor ?? AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (state.taskTitle != null) ...[
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 32.0),
+                            child: Text(
+                              state.taskTitle!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.headingSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                      ],
+
+                      // Large central timer dial
+                      Center(
+                        child: Container(
+                          width: 250,
+                          height: 250,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                isDark ? const Color(0xFF13122B) : Colors.white,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 4.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary
+                                    .withValues(alpha: isDark ? 0.35 : 0.15),
+                                blurRadius: 36,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Invisible spacing block to keep the play button centered
-                              const SizedBox(width: 56),
-                              const SizedBox(width: 16),
-                              // Main Play/Pause Button
-                              GestureDetector(
-                                onTap: () {
-                                  if (state.isRunning) {
-                                    context.read<TimerBloc>().add(PauseTimerEvent());
-                                  } else {
-                                    context.read<TimerBloc>().add(StartTimerEvent());
-                                  }
-                                },
-                                child: Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.primary,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color:
-                                            AppColors.primary.withValues(alpha: 0.35),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    state.isRunning
-                                        ? Icons.pause_rounded
-                                        : Icons.play_arrow_rounded,
-                                    color: Colors.white,
-                                    size: 36,
-                                  ),
+                              Text(
+                                _formatDuration(state.remainingSeconds),
+                                style: TextStyle(
+                                  fontSize: 54.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.lightTextPrimary,
+                                  letterSpacing: -1.0,
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              // Skip Button
-                              GestureDetector(
-                                onTap: () {
-                                  if (state.status == TimerStatus.onBreak) {
-                                    context.read<TimerBloc>().add(TickEvent(0));
-                                  } else {
-                                    context.read<TimerBloc>().add(SkipSessionEvent());
-                                  }
-                                },
-                                child: Container(
-                                  width: 56,
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isDark ? AppColors.darkCardBg : Colors.white,
-                                    border: Border.all(
-                                      color: isDark
-                                          ? AppColors.darkBorder
-                                          : AppColors.lightBorder,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.skip_next_rounded,
-                                    color: isDark
-                                        ? Colors.white
-                                        : AppColors.lightTextPrimary,
-                                    size: 28,
-                                  ),
+                              const SizedBox(height: 4),
+                              Text(
+                                state.status == TimerStatus.onBreak
+                                    ? 'BREAK'
+                                    : 'POMODORO',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: state.status == TimerStatus.onBreak
+                                      ? AppColors.subjectGreen
+                                      : (isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary),
+                                  letterSpacing: 1.5,
+                                  fontWeight:
+                                      state.status == TimerStatus.onBreak
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                 ),
                               ),
                             ],
                           ),
-                          if (state.status == TimerStatus.onBreak) ...[
-                            const SizedBox(height: 16),
-                            GestureDetector(
-                              onTap: () {
-                                context.read<TimerBloc>().add(TickEvent(0));
-                              },
-                              child: const Text(
-                                'End Break Early',
-                                style: TextStyle(
-                                  color: AppColors.subjectGreen,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Play / Pause & Skip Buttons
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 56.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Invisible spacing block to keep the play button centered
+                                const SizedBox(width: 56),
+                                const SizedBox(width: 16),
+                                // Main Play/Pause Button
+                                GestureDetector(
+                                  onTap: () {
+                                    if (state.isRunning) {
+                                      context
+                                          .read<TimerBloc>()
+                                          .add(PauseTimerEvent());
+                                    } else {
+                                      context
+                                          .read<TimerBloc>()
+                                          .add(StartTimerEvent());
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.primary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.35),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      state.isRunning
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 36,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Skip Button
+                                GestureDetector(
+                                  onTap: () {
+                                    if (state.status == TimerStatus.onBreak) {
+                                      context
+                                          .read<TimerBloc>()
+                                          .add(TickEvent(0));
+                                    } else {
+                                      context
+                                          .read<TimerBloc>()
+                                          .add(SkipSessionEvent());
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isDark
+                                          ? AppColors.darkCardBg
+                                          : Colors.white,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.skip_next_rounded,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.lightTextPrimary,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (state.status == TimerStatus.onBreak) ...[
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () {
+                                  context.read<TimerBloc>().add(TickEvent(0));
+                                },
+                                child: const Text(
+                                  'End Break Early',
+                                  style: TextStyle(
+                                    color: AppColors.subjectGreen,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                // Blur overlay when session completes
-                if (state.status == TimerStatus.sessionComplete)
-                  Positioned.fill(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        child: Center(
-                          child: SessionCompleteModal(timerState: state),
+                  // Blur overlay when session completes
+                  if (state.status == TimerStatus.sessionComplete)
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          child: Center(
+                            child: SessionCompleteModal(timerState: state),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class SessionCompleteModal extends StatelessWidget {
@@ -362,10 +381,13 @@ class SessionCompleteModal extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkOverlayBg.withValues(alpha: 0.95) : AppColors.lightCardBg.withValues(alpha: 0.95),
+        color: isDark
+            ? AppColors.darkOverlayBg.withValues(alpha: 0.95)
+            : AppColors.lightCardBg.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: (state.subjectColor ?? AppColors.primary).withValues(alpha: 0.3),
+          color:
+              (state.subjectColor ?? AppColors.primary).withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
@@ -425,7 +447,9 @@ class SessionCompleteModal extends StatelessWidget {
           Text(
             'Session ${state.completedSessions} of 4 complete',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -440,7 +464,9 @@ class SessionCompleteModal extends StatelessWidget {
                     ? 'Long Break — 15 minutes'
                     : 'Short Break — 5 minutes'),
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.7) : AppColors.lightTextSecondary.withValues(alpha: 0.7),
+              color: isDark
+                  ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
+                  : AppColors.lightTextSecondary.withValues(alpha: 0.7),
               fontSize: 13,
             ),
             textAlign: TextAlign.center,
@@ -451,7 +477,9 @@ class SessionCompleteModal extends StatelessWidget {
           Text(
             'Up Next:',
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -461,10 +489,14 @@ class SessionCompleteModal extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.02),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : Colors.black.withValues(alpha: 0.02),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05),
                 width: 1,
               ),
             ),
@@ -472,7 +504,8 @@ class SessionCompleteModal extends StatelessWidget {
                 ? Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: nextItem.tagColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
@@ -493,22 +526,29 @@ class SessionCompleteModal extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.lightTextPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '${nextItem.durationMinutes}m',
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -570,7 +610,8 @@ class SessionCompleteModal extends StatelessWidget {
                     (item) => item.title == taskTitle && !item.isCompleted,
                   );
                   if (matchingItemIndex != -1) {
-                    subjectsBloc.add(ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
+                    subjectsBloc.add(ToggleAgendaItemEvent(
+                        agendaItems[matchingItemIndex].id));
                   }
                 }
 
@@ -591,7 +632,8 @@ class SessionCompleteModal extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 1.5,
                   ),
                   color: isDark ? const Color(0xFF2E2B54) : Colors.white,
@@ -621,7 +663,8 @@ class SessionCompleteModal extends StatelessWidget {
                       (item) => item.title == taskTitle && !item.isCompleted,
                     );
                     if (matchingItemIndex != -1) {
-                      subjectsBloc.add(ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
+                      subjectsBloc.add(ToggleAgendaItemEvent(
+                          agendaItems[matchingItemIndex].id));
                     }
                   }
 
@@ -668,12 +711,15 @@ class SessionCompleteModal extends StatelessWidget {
                       (item) => item.title == taskTitle && !item.isCompleted,
                     );
                     if (matchingItemIndex != -1) {
-                      subjectsBloc.add(ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
+                      subjectsBloc.add(ToggleAgendaItemEvent(
+                          agendaItems[matchingItemIndex].id));
                     }
                   }
 
                   context.read<TimerBloc>().add(ResetTimerEvent());
-                  context.read<NavigationBloc>().add(NavigateToScreenEvent(AppScreen.dashboard));
+                  context
+                      .read<NavigationBloc>()
+                      .add(NavigateToScreenEvent(AppScreen.dashboard));
                 },
                 child: Container(
                   width: double.infinity,
@@ -703,7 +749,9 @@ class SessionCompleteModal extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 context.read<TimerBloc>().add(ResetTimerEvent());
-                context.read<NavigationBloc>().add(NavigateToScreenEvent(AppScreen.dashboard));
+                context
+                    .read<NavigationBloc>()
+                    .add(NavigateToScreenEvent(AppScreen.dashboard));
               },
               child: Container(
                 width: double.infinity,
@@ -711,7 +759,8 @@ class SessionCompleteModal extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 1.5,
                   ),
                   color: isDark ? const Color(0xFF2E2B54) : Colors.white,

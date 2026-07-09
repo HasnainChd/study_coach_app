@@ -15,6 +15,9 @@ class SubjectsState {
   final SubjectsStatus status;
   final String? errorMessage;
 
+  // Tracks which agenda card the user last tapped — used by Quick Start
+  final String? selectedAgendaItemId;
+
   // Gamification fields
   final int streak;
   final double xpProgress;
@@ -30,6 +33,7 @@ class SubjectsState {
     required this.settings,
     this.status = SubjectsStatus.initial,
     this.errorMessage,
+    this.selectedAgendaItemId,
     this.streak = 12,
     this.xpProgress = 0.68,
     this.level = 7,
@@ -45,6 +49,8 @@ class SubjectsState {
     SettingsPreferences? settings,
     SubjectsStatus? status,
     String? errorMessage,
+    String? selectedAgendaItemId,
+    bool clearSelectedAgendaItem = false,
     int? streak,
     double? xpProgress,
     int? level,
@@ -59,6 +65,9 @@ class SubjectsState {
       settings: settings ?? this.settings,
       status: status ?? this.status,
       errorMessage: errorMessage,
+      selectedAgendaItemId: clearSelectedAgendaItem
+          ? null
+          : (selectedAgendaItemId ?? this.selectedAgendaItemId),
       streak: streak ?? this.streak,
       xpProgress: xpProgress ?? this.xpProgress,
       level: level ?? this.level,

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -266,7 +267,8 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
 
     on<SkipBreakEvent>((event, emit) {
       _tickerSubscription?.cancel();
-      final nextWorkSeconds = event.nextDurationSeconds ?? state.workDurationSeconds;
+      final nextWorkSeconds =
+          event.nextDurationSeconds ?? state.workDurationSeconds;
       emit(TimerState(
         remainingSeconds: nextWorkSeconds,
         totalSeconds: nextWorkSeconds,

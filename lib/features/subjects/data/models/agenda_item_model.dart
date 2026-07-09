@@ -29,7 +29,10 @@ class AgendaItemModel extends AgendaItem {
       id: map['id'] as String,
       title: map['title'] as String,
       tag: map['tag'] as String,
-      durationMinutes: map['durationMinutes'] as int,
+      // Use (as num).toInt() to safely handle both int and double values from Hive.
+      // On some platforms / Hive versions the stored integer can be read back as
+      // a double (e.g. 60 → 60.0), causing a direct 'as int' cast to throw.
+      durationMinutes: (map['durationMinutes'] as num).toInt(),
       tagColor: Color(map['tagColorValue'] as int),
       isCompleted: map['isCompleted'] as bool? ?? false,
       hasEarnedXp: map['hasEarnedXp'] as bool? ?? false,

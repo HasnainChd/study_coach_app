@@ -67,3 +67,9 @@ class AddXpEvent extends SubjectsEvent {
   final double xpAmount;
   AddXpEvent(this.xpAmount);
 }
+
+/// Fired when the user taps a card row — updates Quick Start to use this card's duration.
+class SelectAgendaItemEvent extends SubjectsEvent {
+  final String id;
+  SelectAgendaItemEvent(this.id);
+}
