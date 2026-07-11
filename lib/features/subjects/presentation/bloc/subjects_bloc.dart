@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/subject.dart';
 import '../../domain/entities/agenda_item.dart';
@@ -95,73 +94,43 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       final level = await repository.getLevel();
       final lastClaimed = await repository.getLastStreakClaimedDate();
 
-      // If data is empty, populate with initial defaults (first-run experience)
-      if (subjects.isEmpty && agenda.isEmpty) {
-        subjects = [
-          Subject(
-            id: '1',
-            name: 'Computer Science',
-            color: AppColors.subjectGreen,
-            examDate: DateTime.now().add(const Duration(days: 45)),
-            progress: 0.75,
-          ),
-          Subject(
-            id: '2',
-            name: 'Mathematics',
-            color: AppColors.subjectPurple,
-            examDate: DateTime.now().add(const Duration(days: 30)),
-            progress: 0.55,
-          ),
-          Subject(
-            id: '3',
-            name: 'Spanish',
-            color: AppColors.subjectOrange,
-            examDate: DateTime.now().add(const Duration(days: 15)),
-            progress: 0.88,
-          ),
-          Subject(
-            id: '4',
-            name: 'Physics',
-            color: AppColors.subjectPink,
-            examDate: DateTime.now().add(const Duration(days: 60)),
-            progress: 0.31,
-          ),
-        ];
 
-        agenda = [
-          AgendaItem(
-            id: 'a1',
-            title: 'Data Structures - Binary Trees',
-            tag: 'CS',
-            durationMinutes: 30,
-            tagColor: AppColors.subjectGreen,
-            isCompleted: true,
-          ),
-          AgendaItem(
-            id: 'a2',
-            title: 'Calculus - Integration by Parts',
-            tag: 'Math',
-            durationMinutes: 45,
-            tagColor: AppColors.subjectPurple,
-          ),
-          AgendaItem(
-            id: 'a3',
-            title: 'Spanish Vocabulary Review',
-            tag: 'Language',
-            durationMinutes: 20,
-            tagColor: AppColors.subjectOrange,
-          ),
-          AgendaItem(
-            id: 'a4',
-            title: 'Physics - Quantum Mechanics',
-            tag: 'Physics',
-            durationMinutes: 60,
-            tagColor: AppColors.subjectPink,
-          ),
-        ];
 
-        await repository.saveSubjects(subjects);
+      // Data migration on launch
+      bool migrated = false;
+      final migratedAgenda = agenda.map((item) {
+        if (item.isCompleted && !item.hasEarnedXp) {
+          migrated = true;
+          return item.copyWith(hasEarnedXp: true);
+        }
+        return item;
+      }).toList();
+
+      if (migrated) {
+        agenda = migratedAgenda;
         await repository.saveAgendaItems(agenda);
+      }
+
+      // Streak Reset Check on Launch
+      int currentStreak = streak;
+      bool showResetSnackbar = false;
+      if (lastClaimed.isNotEmpty) {
+        try {
+          final now = DateTime.now();
+          final todayDateStr = now.toIso8601String().substring(0, 10);
+          final yesterday = now.subtract(const Duration(days: 1));
+          final yesterdayDateStr = yesterday.toIso8601String().substring(0, 10);
+          
+          if (lastClaimed != todayDateStr && lastClaimed != yesterdayDateStr && streak > 0) {
+            currentStreak = 0;
+            await repository.saveStreak(0);
+            showResetSnackbar = true;
+          }
+        } catch (_) {}
+      } else if (streak > 0) {
+        currentStreak = 0;
+        await repository.saveStreak(0);
+        showResetSnackbar = true;
       }
 
       emit(state.copyWith(
@@ -172,10 +141,11 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         preferredTime: preferredTime,
         notificationsEnabled: notifications,
         settings: settings,
-        streak: streak,
+        streak: currentStreak,
         xpProgress: xpProgress,
         level: level,
         lastStreakClaimedDate: lastClaimed,
+        streakResetTriggered: showResetSnackbar,
         errorMessage: null,
       ));
     } catch (e) {
@@ -273,34 +243,23 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   ) async {
     try {
       bool shouldAwardXp = false;
-      AgendaItem? targetItem;
-      AgendaItem? updatedTargetItem;
 
       final updatedAgenda = state.agendaItems.map((item) {
         if (item.id == event.id) {
-          targetItem = item;
           final nextCompleted = !item.isCompleted;
           bool nextHasEarnedXp = item.hasEarnedXp;
           if (nextCompleted && !item.hasEarnedXp) {
             shouldAwardXp = true;
             nextHasEarnedXp = true;
           }
-          updatedTargetItem = item.copyWith(
+          return item.copyWith(
             isCompleted: nextCompleted,
             hasEarnedXp: nextHasEarnedXp,
           );
-          return updatedTargetItem!;
         }
         return item;
       }).toList();
 
-      if (targetItem != null) {
-        print('=== TOGGLE DEBUG ===');
-        print('Item ID: ${targetItem!.id}');
-        print('Item title: ${targetItem!.title}');
-        print('isCompleted BEFORE: ${targetItem!.isCompleted}');
-        print('hasEarnedXp BEFORE: ${targetItem!.hasEarnedXp}');
-      }
 
       await repository.saveAgendaItems(updatedAgenda);
 
@@ -310,11 +269,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       var lastClaimed = state.lastStreakClaimedDate;
 
       if (shouldAwardXp) {
-        // Add 15% XP for completing tasks
-        currentXp += 0.15;
-        if (currentXp >= 1.0) {
+        final totalTasks = state.agendaItems.length;
+        final xpPerTask = totalTasks > 0 ? (1.0 / totalTasks) : 0.15;
+        currentXp += xpPerTask;
+        if (currentXp >= 0.99) {
           currentLevel += 1;
-          currentXp = currentXp % 1.0;
+          currentXp = 0.0;
           await repository.saveLevel(currentLevel);
         }
         await repository.saveXpProgress(currentXp);
@@ -337,14 +297,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         lastStreakClaimedDate: lastClaimed,
       ));
 
-      if (updatedTargetItem != null) {
-        final xpAwarded = shouldAwardXp ? 0.15 : 0.0;
-        print('isCompleted AFTER: ${updatedTargetItem!.isCompleted}');
-        print('hasEarnedXp AFTER: ${updatedTargetItem!.hasEarnedXp}');
-        print('XP awarded this tap: ${xpAwarded}');
-        print('Current XP progress: ${state.xpProgress}');
-        print('====================');
-      }
     } catch (_) {}
   }
 

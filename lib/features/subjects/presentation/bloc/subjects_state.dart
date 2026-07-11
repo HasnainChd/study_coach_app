@@ -23,6 +23,7 @@ class SubjectsState {
   final double xpProgress;
   final int level;
   final String lastStreakClaimedDate;
+  final bool streakResetTriggered;
 
   SubjectsState({
     required this.subjects,
@@ -34,10 +35,11 @@ class SubjectsState {
     this.status = SubjectsStatus.initial,
     this.errorMessage,
     this.selectedAgendaItemId,
-    this.streak = 12,
-    this.xpProgress = 0.68,
-    this.level = 7,
+    this.streak = 0,
+    this.xpProgress = 0.0,
+    this.level = 1,
     this.lastStreakClaimedDate = '',
+    this.streakResetTriggered = false,
   });
 
   SubjectsState copyWith({
@@ -55,6 +57,7 @@ class SubjectsState {
     double? xpProgress,
     int? level,
     String? lastStreakClaimedDate,
+    bool? streakResetTriggered,
   }) {
     return SubjectsState(
       subjects: subjects ?? this.subjects,
@@ -72,6 +75,7 @@ class SubjectsState {
       xpProgress: xpProgress ?? this.xpProgress,
       level: level ?? this.level,
       lastStreakClaimedDate: lastStreakClaimedDate ?? this.lastStreakClaimedDate,
+      streakResetTriggered: streakResetTriggered ?? this.streakResetTriggered,
     );
   }
 }

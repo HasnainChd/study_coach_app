@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/timer_bloc.dart';
+import '../../../subjects/domain/entities/agenda_item.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_event.dart';
 
@@ -288,9 +289,31 @@ class FocusTimerPage extends StatelessWidget {
                                           .read<TimerBloc>()
                                           .add(TickEvent(0));
                                     } else {
-                                      context
-                                          .read<TimerBloc>()
-                                          .add(SkipSessionEvent());
+                                      final items = context.read<SubjectsBloc>().state.agendaItems;
+                                      final current = state.taskTitle;
+                                      AgendaItem? next;
+                                      for (final item in items) {
+                                        if (!item.isCompleted && item.title != current) {
+                                          next = item;
+                                          break;
+                                        }
+                                      }
+
+                                      if (next != null) {
+                                        context.read<TimerBloc>().add(
+                                          StartTimerEvent(
+                                            durationSeconds: next.durationMinutes * 60,
+                                            taskTitle: next.title,
+                                            subjectName: next.tag,
+                                            subjectColor: next.tagColor,
+                                            isRunning: false,
+                                          ),
+                                        );
+                                      } else {
+                                        context.read<NavigationBloc>().add(
+                                          NavigateToScreenEvent(AppScreen.dashboard),
+                                        );
+                                      }
                                     }
                                   },
                                   child: Container(
@@ -623,7 +646,10 @@ class SessionCompleteModal extends StatelessWidget {
                         nextSubjectColor: nextItem.tagColor,
                       ));
                 } else {
-                  context.read<TimerBloc>().add(SkipBreakEvent());
+                  context.read<TimerBloc>().add(ResetTimerEvent());
+                  context
+                      .read<NavigationBloc>()
+                      .add(NavigateToScreenEvent(AppScreen.dashboard));
                 }
               },
               child: Container(

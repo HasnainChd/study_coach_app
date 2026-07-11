@@ -171,14 +171,14 @@ void main() {
     expect(bloc.state.status, SubjectsStatus.initial);
   });
 
-  test('LoadSubjectsEvent populates initial default mock data if empty', () async {
+  test('LoadSubjectsEvent remains empty when data is empty', () async {
     bloc.add(LoadSubjectsEvent());
     
     await expectLater(
       bloc.stream,
       emitsInOrder([
         predicate<SubjectsState>((state) => state.status == SubjectsStatus.loading),
-        predicate<SubjectsState>((state) => state.status == SubjectsStatus.success && state.subjects.isNotEmpty),
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.success && state.subjects.isEmpty),
       ]),
     );
   });
@@ -251,6 +251,10 @@ void main() {
   });
 
   test('ClaimStreakEvent increments streak when not claimed today', () async {
+    bloc.emit(bloc.state.copyWith(
+      streak: 12,
+      lastStreakClaimedDate: '',
+    ));
     repository.streak = 12;
     repository.lastStreakClaimedDate = '';
 
@@ -279,7 +283,7 @@ void main() {
   });
 
   test('ToggleAgendaItemEvent auto-increments XP and claims streak on completion', () async {
-    final item = AgendaItem(
+    final item1 = AgendaItem(
       id: 'task_1',
       title: 'Calculus',
       tag: 'Math',
@@ -287,8 +291,16 @@ void main() {
       tagColor: Colors.purple,
       isCompleted: false,
     );
+    final item2 = AgendaItem(
+      id: 'task_2',
+      title: 'Algebra',
+      tag: 'Math',
+      durationMinutes: 30,
+      tagColor: Colors.purple,
+      isCompleted: false,
+    );
     bloc.emit(bloc.state.copyWith(
-      agendaItems: [item],
+      agendaItems: [item1, item2],
       xpProgress: 0.20,
       streak: 12,
       lastStreakClaimedDate: '',
@@ -301,7 +313,7 @@ void main() {
       emits(
         predicate<SubjectsState>((state) =>
             state.agendaItems.first.isCompleted &&
-            (state.xpProgress - 0.35).abs() < 0.001 && // float comparison
+            (state.xpProgress - 0.70).abs() < 0.001 && // 0.20 + 0.50 = 0.70
             state.streak == 13),
       ),
     );

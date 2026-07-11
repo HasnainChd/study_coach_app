@@ -78,11 +78,13 @@ class StartTimerEvent extends TimerEvent {
   final String? taskTitle;
   final String? subjectName;
   final Color? subjectColor;
+  final bool? isRunning;
   StartTimerEvent({
     this.durationSeconds,
     this.taskTitle,
     this.subjectName,
     this.subjectColor,
+    this.isRunning,
   });
 }
 
@@ -146,13 +148,16 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
           event.durationSeconds ?? state.workDurationSeconds;
       final nextIsBreakTime =
           event.durationSeconds != null ? false : state.isBreakTime;
-      final nextStatus =
-          nextIsBreakTime ? TimerStatus.onBreak : TimerStatus.running;
+      
+      final shouldRun = event.isRunning ?? true;
+      final nextStatus = nextIsBreakTime
+          ? TimerStatus.onBreak
+          : (shouldRun ? TimerStatus.running : TimerStatus.paused);
 
       emit(TimerState(
         remainingSeconds: nextDuration,
         totalSeconds: nextTotal,
-        isRunning: true,
+        isRunning: shouldRun,
         sessionNumber: state.sessionNumber,
         taskTitle: event.taskTitle ?? state.taskTitle,
         subjectName: event.subjectName ?? state.subjectName,
@@ -165,12 +170,14 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         workDurationSeconds: nextWorkDuration,
       ));
 
-      _tickerSubscription =
-          Stream.periodic(const Duration(seconds: 1), (x) => x)
-              .take(nextDuration)
-              .listen((tick) {
-        add(TickEvent(state.remainingSeconds - 1));
-      });
+      if (shouldRun) {
+        _tickerSubscription =
+            Stream.periodic(const Duration(seconds: 1), (x) => x)
+                .take(nextDuration)
+                .listen((tick) {
+          add(TickEvent(state.remainingSeconds - 1));
+        });
+      }
     });
 
     on<TickEvent>((event, emit) {
