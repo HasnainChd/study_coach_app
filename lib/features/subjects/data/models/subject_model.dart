@@ -25,7 +25,9 @@ class SubjectModel extends Subject {
       id: map['id'] as String,
       name: map['name'] as String,
       color: Color(map['colorValue'] as int),
-      examDate: map['examDate'] != null ? DateTime.parse(map['examDate'] as String) : null,
+      examDate: map['examDate'] != null
+          ? DateTime.parse(map['examDate'] as String)
+          : null,
       progress: (map['progress'] as num?)?.toDouble() ?? 0.50,
     );
   }

@@ -356,7 +356,7 @@ class DailySchedulePage extends StatelessWidget {
               if (isGenerating)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.55),
+                    color: Colors.black.withValues(alpha: 0.55),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                       child: Center(

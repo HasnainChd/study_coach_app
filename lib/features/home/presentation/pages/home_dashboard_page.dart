@@ -18,6 +18,9 @@ class HomeDashboardPage extends StatelessWidget {
 
   static final ValueNotifier<String?> userNameNotifier =
       ValueNotifier<String?>(null);
+  static final ValueNotifier<int?> levelUpNotifier =
+      ValueNotifier<int?>(null);
+  static int? _lastLevel;
 
   static void loadName() {
     if (userNameNotifier.value == null) {
@@ -160,15 +163,29 @@ class HomeDashboardPage extends StatelessWidget {
                       letterSpacing: 1.0,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
+                  const SizedBox(height: 12),                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(7, (index) {
                       final dayNum = index + 1; // 1 = Monday
-                      final isPastOrToday = dayNum <= currentWeekday;
                       final isToday = dayNum == currentWeekday;
-                      final isChecked =
-                          isPastOrToday && (!isToday || todayClaimed);
+                      
+                      bool isChecked = false;
+                      if (state.streak > 0 && state.lastStreakClaimedDate.isNotEmpty) {
+                        try {
+                          final lastClaimed = DateTime.parse(state.lastStreakClaimedDate);
+                          final daysDiff = dayNum - currentWeekday;
+                          final dayDate = now.add(Duration(days: daysDiff));
+                          
+                          final dayDateNormalized = DateTime(dayDate.year, dayDate.month, dayDate.day);
+                          final lastClaimedNormalized = DateTime(lastClaimed.year, lastClaimed.month, lastClaimed.day);
+                          
+                          final diffInDays = lastClaimedNormalized.difference(dayDateNormalized).inDays;
+                          
+                          if (diffInDays >= 0 && diffInDays < state.streak) {
+                            isChecked = true;
+                          }
+                        } catch (_) {}
+                      }
 
                       return Column(
                         children: [
@@ -303,18 +320,42 @@ class HomeDashboardPage extends StatelessWidget {
     return Scaffold(
       body: BlocListener<SubjectsBloc, SubjectsState>(
         listenWhen: (previous, current) =>
-            previous.status == SubjectsStatus.planGenerating &&
-            current.status == SubjectsStatus.planGenerated,
+            (previous.status == SubjectsStatus.planGenerating &&
+                current.status == SubjectsStatus.planGenerated) ||
+            (previous.status == SubjectsStatus.success &&
+                previous.level < current.level) ||
+            (!previous.streakResetTriggered && current.streakResetTriggered),
         listener: (context, state) {
-          AppSnackbar.show(
-            context,
-            type: SnackbarType.success,
-            title: "Plan Ready!",
-            message: "Your study schedule has been generated.",
-          );
+          if (state.status == SubjectsStatus.planGenerated) {
+            AppSnackbar.show(
+              context,
+              type: SnackbarType.success,
+              title: "Plan Ready!",
+              message: "Your study schedule has been generated.",
+            );
+          }
+
+          if (_lastLevel != null && state.level > _lastLevel!) {
+            levelUpNotifier.value = state.level;
+            Future.delayed(const Duration(seconds: 2), () {
+              levelUpNotifier.value = null;
+            });
+          }
+          _lastLevel = state.level;
+
+          if (state.streakResetTriggered) {
+            AppSnackbar.show(
+              context,
+              type: SnackbarType.warning,
+              title: 'Streak Reset',
+              message: 'Your streak was reset. Start a new one today!',
+            );
+          }
         },
-        child: GradientBackground(
-          child: Padding(
+        child: Stack(
+          children: [
+            GradientBackground(
+              child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Column(
@@ -341,17 +382,50 @@ class HomeDashboardPage extends StatelessWidget {
                           valueListenable: HomeDashboardPage.userNameNotifier,
                           builder: (context, name, _) {
                             final prefix = _getTimeBasedGreeting();
-                            final greeting = name != null && name.isNotEmpty
-                                ? '$prefix, $name'
-                                : '$prefix 👋';
-                            return Text(
-                              greeting,
-                              style: AppTextStyles.headingMedium.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                              ),
-                            );
+                            if (name == null || name.isEmpty) {
+                              return Text(
+                                '$prefix 👋',
+                                style: AppTextStyles.headingMedium.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
+                                ),
+                              );
+                            } else if (name.length <= 9) {
+                              return Text(
+                                '$prefix, $name',
+                                style: AppTextStyles.headingMedium.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
+                                ),
+                              );
+                            } else {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '$prefix,',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    name,
+                                    style: AppTextStyles.headingMedium.copyWith(
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.lightTextPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
                           },
                         ),
                       ],
@@ -790,6 +864,125 @@ class HomeDashboardPage extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
             ),
+          ),
+        ),
+        ValueListenableBuilder<int?>(
+          valueListenable: HomeDashboardPage.levelUpNotifier,
+          builder: (context, level, _) {
+            if (level == null) return const SizedBox.shrink();
+            return Positioned.fill(
+              child: LevelUpOverlay(level: level),
+            );
+          },
+        ),
+      ],
+    ),
+  ),
+);
+  }
+}
+
+class LevelUpOverlay extends StatelessWidget {
+  final int level;
+  LevelUpOverlay({super.key, required this.level}) {
+    Future.microtask(() {
+      _opacityNotifier.value = 1.0;
+    });
+    Future.delayed(const Duration(milliseconds: 1700), () {
+      _opacityNotifier.value = 0.0;
+    });
+  }
+
+  final ValueNotifier<double> _opacityNotifier = ValueNotifier<double>(0.0);
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<double>(
+      valueListenable: _opacityNotifier,
+      builder: (context, opacity, child) {
+        return AnimatedOpacity(
+          opacity: opacity,
+          duration: const Duration(milliseconds: 300),
+          child: child,
+        );
+      },
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.85),
+        alignment: Alignment.center,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 40),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF151528),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.5),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 40,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.amber,
+                    size: 48,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'LEVEL UP!',
+                style: AppTextStyles.headingMedium.copyWith(
+                  color: Colors.white,
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 28,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Level $level Scholar! 🎉',
+                style: AppTextStyles.headingSmall.copyWith(
+                  color: AppColors.subjectGreen,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Keep up the amazing work!',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.darkTextSecondary,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),

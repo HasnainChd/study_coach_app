@@ -53,10 +53,13 @@ Daily study budget: $dailyMinutes minutes.
 Preferred time of study: $preferredTime.
 
 Rules for study time allocation:
-1. Distribute the total $dailyMinutes minutes budget among the subjects proportional to their priority.
-2. High priority subjects (especially those with exams coming up soon) MUST be allocated more study time, more tasks, and focus on more questions.
-3. Lower priority subjects (those with far away exams or no exams scheduled) should get less study time and less focus.
-4. The sum of durationMinutes of all generated tasks must be approximately equal to $dailyMinutes.
+STRICT TIME BUDGET RULES:
+1. The sum of ALL durationMinutes values MUST equal EXACTLY $dailyMinutes minutes total.
+2. Before finalizing, add up all durationMinutes. If total != $dailyMinutes, adjust task durations.
+3. Minimum duration per task: 10 minutes.
+4. Maximum duration per task: 60 minutes.
+5. Prioritize subjects with closer exam dates by giving them more time.
+6. Return tasks sorted by priority (closest exam date first).
 
 Return ONLY a raw JSON array of objects representing study tasks. Do not include markdown code block formatting (such as ```json). The JSON structure must match this schema:
 [
@@ -68,9 +71,6 @@ Return ONLY a raw JSON array of objects representing study tasks. Do not include
 ]
 Provide specific, actionable study tasks rather than generic ones.
 ''';
-
-    const maxRetries = 3;
-    const retryDelay = Duration(seconds: 2);
 
     final client = HttpClient();
     final uri = Uri.parse(

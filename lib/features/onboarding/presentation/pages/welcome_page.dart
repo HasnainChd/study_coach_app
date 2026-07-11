@@ -37,169 +37,190 @@ class WelcomePage extends StatelessWidget {
 
     return Scaffold(
       body: GradientBackground(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 12.0),
-                        child: Row(
-                          children: [
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.primary.withValues(alpha: 0.1)
-                                    : AppColors.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
-                                  width: 1,
+            // Centered main content
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: IntrinsicHeight(
+                        child: Form(
+                          key: _formKey,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Step Indicator
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                                  child: Row(
+                                    children: [
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AppColors.primary.withValues(alpha: 0.1)
+                                              : AppColors.primary.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: AppColors.primary.withValues(alpha: 0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Step 1 of 3',
+                                          style: AppTextStyles.labelSmall.copyWith(
+                                            color: isDark
+                                                ? AppColors.primaryLight
+                                                : AppColors.primaryDark,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                'Step 1 of 3',
-                                style: AppTextStyles.labelSmall.copyWith(
-                                  color: isDark
-                                      ? AppColors.primaryLight
-                                      : AppColors.primaryDark,
+                                const Spacer(),
+                                // Circular glowing book icon
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isDark
+                                        ? AppColors.primary.withValues(alpha: 0.8)
+                                        : AppColors.primary,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                        blurRadius: 24,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.menu_book_rounded,
+                                      color: Colors.white,
+                                      size: 36,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                                const SizedBox(height: 32),
+                                // Title
+                                Text(
+                                  'StudyCoach AI',
+                                  style: AppTextStyles.headingLarge.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightTextPrimary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                // Subtitle
+                                Text(
+                                  'Your AI-powered path to\nacademic excellence',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                    height: 1.5,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 32),
 
-                      const SizedBox(height: 40),
-                      // Circular glowing book icon
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? AppColors.primary.withValues(alpha: 0.8)
-                              : AppColors.primary,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.4),
-                              blurRadius: 24,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 4),
+                                // Name Input Field
+                                TextFormField(
+                                  controller: _nameController,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Please enter your name';
+                                    }
+                                    return null;
+                                  },
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter your name',
+                                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: AppColors.primary,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: AppColors.subjectPink,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: const BorderSide(
+                                        color: AppColors.subjectPink,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    errorStyle: const TextStyle(
+                                      color: AppColors.subjectPink,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(flex: 2),
+                                const SizedBox(height: 120), // bottom button placeholder
+                              ],
                             ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            color: Colors.white,
-                            size: 36,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      // Title
-                      Text(
-                        'StudyCoach AI',
-                        style: AppTextStyles.headingLarge.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      // Subtitle
-                      Text(
-                        'Your AI-powered path to\nacademic excellence',
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Name Input Field
-                      TextFormField(
-                        controller: _nameController,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your name';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Enter your name',
-                          hintStyle: AppTextStyles.bodyMedium.copyWith(
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                          ),
-                          filled: true,
-                          fillColor: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.subjectPink,
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.subjectPink,
-                              width: 1.5,
-                            ),
-                          ),
-                          errorStyle: const TextStyle(
-                            color: AppColors.subjectPink,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Get Started Button
-                      PrimaryButton(
-                        text: 'Get Started',
-                        onPressed: () => _handleGetStarted(context),
-                      ),
-                    ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Pinned Get Started Button
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
+                  child: PrimaryButton(
+                    text: 'Get Started',
+                    onPressed: () => _handleGetStarted(context),
                   ),
                 ),
               ),

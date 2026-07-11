@@ -149,7 +149,7 @@ class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
   Future<int> getStreak() async {
     final dynamic val = _box.get(_keyStreak);
     if (val is int) return val;
-    return 12;
+    return 0;
   }
 
   @override
@@ -161,7 +161,7 @@ class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
   Future<double> getXpProgress() async {
     final dynamic val = _box.get(_keyXp);
     if (val is double) return val;
-    return 0.68;
+    return 0.0;
   }
 
   @override
@@ -173,7 +173,7 @@ class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
   Future<int> getLevel() async {
     final dynamic val = _box.get(_keyLevel);
     if (val is int) return val;
-    return 7;
+    return 1;
   }
 
   @override
