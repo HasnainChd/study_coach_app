@@ -64,8 +64,8 @@ class _SecondaryButtonState extends State<SecondaryButton> with SingleTickerProv
                 width: 1.5,
               ),
               color: isDark
-                  ? AppColors.primary.withOpacity(0.04)
-                  : AppColors.primary.withOpacity(0.02),
+                  ? AppColors.primary.withValues(alpha: 0.04)
+                  : AppColors.primary.withValues(alpha: 0.02),
             ),
             child: Center(
               child: Row(

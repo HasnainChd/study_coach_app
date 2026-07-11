@@ -71,7 +71,7 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(isDark ? 0.3 : 0.15),
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.15),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
