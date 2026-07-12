@@ -23,48 +23,121 @@ class SettingsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor:
-              isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
-          title: Text(
-            'Edit Name',
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.lightTextPrimary,
-              fontWeight: FontWeight.bold,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: GlassCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Edit Name',
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter your name',
+                    hintStyle: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? AppColors.darkOverlayBg
+                        : AppColors.lightBorder.withValues(alpha: 0.35),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () async {
+                        final newName = controller.text.trim();
+                        if (newName.isNotEmpty) {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('userName', newName);
+                          HomeDashboardPage.userNameNotifier.value = newName;
+                        }
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              AppColors.primary,
+                              Color(0xFF805CFF),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Save',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          content: TextField(
-            controller: controller,
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.lightTextPrimary,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'Enter your name',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final newName = controller.text.trim();
-                if (newName.isNotEmpty) {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('userName', newName);
-                  HomeDashboardPage.userNameNotifier.value = newName;
-                }
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text(
-                'Save',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -511,9 +584,9 @@ class SettingsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
 
-                      // ACCOUNT & DATA
+                      // AI COACH
                       Text(
-                        'ACCOUNT & DATA',
+                        'AI COACH',
                         style: AppTextStyles.labelSmall.copyWith(
                           color: isDark
                               ? AppColors.darkTextSecondary
@@ -522,49 +595,47 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      GlassCard(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.refresh_rounded, color: AppColors.primary),
-                              title: Text(
-                                'Regenerate Study Plan',
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      SizedBox(
+                        width: double.infinity,
+                        child: GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _showResetChatConfirmation(context),
+                                behavior: HitTestBehavior.opaque,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Reset Conversation',
+                                    style: AppTextStyles.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              subtitle: Text(
-                                'AI drafts a fresh plan with current subjects',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              GestureDetector(
+                                onTap: () =>
+                                    _showRegenerateConfirmation(context),
+                                behavior: HitTestBehavior.opaque,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Regenerate Study Plan',
+                                    style: AppTextStyles.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              onTap: () => _showRegenerateConfirmation(context),
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.redAccent),
-                              title: Text(
-                                'Reset Conversation',
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Clear chat history with AI coach',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                ),
-                              ),
-                              onTap: () => _showResetChatConfirmation(context),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),

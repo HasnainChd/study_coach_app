@@ -77,14 +77,15 @@ class _CoachChatPageState extends State<CoachChatPage> {
           backgroundColor:
               isDark ? AppColors.darkOverlayBg : Colors.white,
           title: Text(
-            'Clear Chat',
+            'Reset Conversation?',
             style: TextStyle(
               color: isDark ? Colors.white : AppColors.lightTextPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
-            'This will delete all chat history. Are you sure?',
+            'This will clear all past chat history with your AI Study Coach. '
+            'This action cannot be undone.',
             style: TextStyle(
               color: isDark
                   ? AppColors.darkTextSecondary
@@ -124,50 +125,71 @@ class _CoachChatPageState extends State<CoachChatPage> {
             // ── Header ──────────────────────────────────────────────────────
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
               child: Row(
                 children: [
-                  const SizedBox(width: 48),
-                  const Spacer(),
-                  BlocBuilder<ChatBloc, ChatState>(
-                    builder: (context, chatState) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'AI Coach',
-                            style: AppTextStyles.headingSmall.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                          if (chatState.isTyping)
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: BlocBuilder<ChatBloc, ChatState>(
+                      builder: (context, chatState) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              'typing...',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 11,
+                              'AI Coach',
+                              style: AppTextStyles.headingSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                                fontSize: 18,
                               ),
                             ),
-                        ],
-                      );
-                    },
+                            if (chatState.isTyping)
+                              Text(
+                                'typing...',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.primary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                  const Spacer(),
-                  IconButton(
+                  PopupMenuButton<String>(
                     icon: Icon(
-                      Icons.delete_outline_rounded,
+                      Icons.more_vert_rounded,
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.lightTextSecondary,
                     ),
-                    onPressed: _showClearDialog,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'reset') {
+                        _showClearDialog();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<String>(
+                        value: 'reset',
+                        child: Text(
+                          'Reset Conversation',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const Divider(color: Colors.transparent, height: 1),
 
             // ── Messages list ────────────────────────────────────────────────
             Expanded(

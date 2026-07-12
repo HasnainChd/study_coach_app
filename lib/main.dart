@@ -70,6 +70,7 @@ void main() async {
       hasCompletedOnboarding ? AppScreen.dashboard : AppScreen.welcome;
 
   runApp(MyApp(
+    hiveBox: box,
     repository: repository,
     chatRepository: chatRepository,
     studyHistoryRepository: studyHistoryRepository,
@@ -80,6 +81,7 @@ void main() async {
 
 
 class MyApp extends StatelessWidget {
+  final Box hiveBox;
   final SubjectRepository repository;
   final ChatRepository chatRepository;
   final StudyHistoryRepository studyHistoryRepository;
@@ -88,6 +90,7 @@ class MyApp extends StatelessWidget {
 
   const MyApp({
     super.key,
+    required this.hiveBox,
     required this.repository,
     required this.chatRepository,
     required this.studyHistoryRepository,
@@ -99,7 +102,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ThemeBloc>(create: (context) => ThemeBloc()),
+        BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(hiveBox)),
         BlocProvider<NavigationBloc>(
           create: (context) => NavigationBloc(initialScreen: initialScreen),
         ),

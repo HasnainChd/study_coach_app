@@ -115,7 +115,7 @@ class HomeDashboardPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Flame Icon
                   Container(
@@ -151,7 +151,7 @@ class HomeDashboardPage extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Weekly checkmarks
                   Text(
@@ -577,7 +577,7 @@ class HomeDashboardPage extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
                 // Today's Agenda header
                 Text(
@@ -848,7 +848,7 @@ class HomeDashboardPage extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Quick Start Session Button
                 BlocBuilder<SubjectsBloc, SubjectsState>(
@@ -935,7 +935,7 @@ class HomeDashboardPage extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
               ],
             ),
           ),
