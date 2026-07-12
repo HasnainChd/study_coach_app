@@ -52,14 +52,13 @@ $subjectsWithPriority
 Daily study budget: $dailyMinutes minutes.
 Preferred time of study: $preferredTime.
 
-Rules for study time allocation:
-STRICT TIME BUDGET RULES:
-1. The sum of ALL durationMinutes values MUST equal EXACTLY $dailyMinutes minutes total.
-2. Before finalizing, add up all durationMinutes. If total != $dailyMinutes, adjust task durations.
-3. Minimum duration per task: 10 minutes.
-4. Maximum duration per task: 60 minutes.
-5. Prioritize subjects with closer exam dates by giving them more time.
-6. Return tasks sorted by priority (closest exam date first).
+CRITICAL TIME BUDGET RULES — MUST FOLLOW:
+1. The TOTAL of all durationMinutes values MUST equal EXACTLY $dailyMinutes minutes. Not more. Not less.
+2. Calculate total before returning. Adjust durations if total is wrong.
+3. Minimum task duration: 10 minutes.
+4. Maximum task duration: 60 minutes.
+5. Give MORE time to subjects with closer exam dates.
+6. Return tasks sorted by exam date proximity (closest exam first).
 
 Return ONLY a raw JSON array of objects representing study tasks. Do not include markdown code block formatting (such as ```json). The JSON structure must match this schema:
 [
@@ -136,7 +135,7 @@ Provide specific, actionable study tasks rather than generic ones.
           'AI coach returned an empty study plan. Please try again.');
     }
 
-    final List<AgendaItem> agendaItems = [];
+    List<AgendaItem> agendaItems = [];
 
     // Capture timestamp once so all generated IDs in this batch are unique
     final batchTimestamp = DateTime.now().millisecondsSinceEpoch;
@@ -170,6 +169,39 @@ Provide specific, actionable study tasks rather than generic ones.
         ),
       );
     }
+    // Step 1: Calculate actual total
+    int actualTotal = agendaItems.fold(
+      0, (sum, item) => sum + item.durationMinutes
+    );
+
+    // Step 2: If total != dailyMinutes, scale
+    if (actualTotal != dailyMinutes) {
+      agendaItems = agendaItems.map((item) {
+        final scaled = (item.durationMinutes * 
+          dailyMinutes / actualTotal).round();
+        return item.copyWith(
+          durationMinutes: scaled.clamp(10, 60)
+        );
+      }).toList();
+    }
+
+    // Step 3: Fix rounding remainder on last task
+    int correctedTotal = agendaItems.fold(
+      0, (sum, item) => sum + item.durationMinutes
+    );
+    int remainder = dailyMinutes - correctedTotal;
+    if (remainder != 0) {
+      final last = agendaItems.last;
+      final correctedLast = (last.durationMinutes + 
+        remainder).clamp(10, 60);
+      agendaItems[agendaItems.length - 1] = 
+        last.copyWith(durationMinutes: correctedLast);
+    }
+
+    // Step 4: Verify
+    final finalTotal = agendaItems.fold(
+      0, (sum, item) => sum + item.durationMinutes
+    );
 
     return agendaItems;
   }

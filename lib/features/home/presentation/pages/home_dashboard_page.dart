@@ -407,7 +407,8 @@ class HomeDashboardPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     '$prefix,',
-                                    style: AppTextStyles.bodyMedium.copyWith(
+                                    style: TextStyle(
+                                      fontSize: 14,
                                       color: isDark
                                           ? AppColors.darkTextSecondary
                                           : AppColors.lightTextSecondary,
@@ -416,11 +417,10 @@ class HomeDashboardPage extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     name,
-                                    style: AppTextStyles.headingMedium.copyWith(
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.lightTextPrimary,
+                                    style: const TextStyle(
+                                      fontSize: 24,
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
@@ -586,6 +586,55 @@ class HomeDashboardPage extends StatelessWidget {
                 Expanded(
                   child: BlocBuilder<SubjectsBloc, SubjectsState>(
                     builder: (context, state) {
+                      if (state.subjects.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  color: isDark ? Colors.white30 : Colors.black26,
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No Subjects Added',
+                                  style: AppTextStyles.headingSmall.copyWith(
+                                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Add your subjects first to generate a personalized daily study plan!',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    context.read<NavigationBloc>().add(SwitchDashboardTabEvent(3));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                                  label: const Text('Go to Subjects'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                       final items = state.agendaItems;
                       return ListView.separated(
                         padding: EdgeInsets.zero,
@@ -643,9 +692,9 @@ class HomeDashboardPage extends StatelessWidget {
                                     onTap: item.isCompleted
                                         ? null
                                         : () {
-                                            // 1. Set specific countdown duration matching card minutes and start ticking
                                             context.read<TimerBloc>().add(
                                                   StartTimerEvent(
+                                                    taskId: item.id,
                                                     durationSeconds:
                                                         item.durationMinutes *
                                                             60,
@@ -700,31 +749,48 @@ class HomeDashboardPage extends StatelessWidget {
                                                 const SizedBox(height: 8),
                                                 Row(
                                                   children: [
-                                                    Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
+                                                    (() {
+                                                      final matchedSubject = state.subjects.firstWhere(
+                                                        (s) => s.name.toLowerCase() == item.tag.toLowerCase(),
+                                                        orElse: () => Subject(id: '', name: '', color: Colors.transparent),
+                                                      );
+                                                      bool showRedChip = false;
+                                                      if (matchedSubject.id.isNotEmpty && matchedSubject.examDate != null) {
+                                                        final today = DateTime(
+                                                          DateTime.now().year,
+                                                          DateTime.now().month,
+                                                          DateTime.now().day,
+                                                        );
+                                                        final examDay = DateTime(
+                                                          matchedSubject.examDate!.year,
+                                                          matchedSubject.examDate!.month,
+                                                          matchedSubject.examDate!.day,
+                                                        );
+                                                        final daysUntilExam = examDay.difference(today).inDays;
+                                                        if (daysUntilExam <= 7) {
+                                                          showRedChip = true;
+                                                        }
+                                                      }
+                                                      final displayColor = showRedChip ? const Color(0xFFFF4D6A) : item.tagColor;
+                                                      return Container(
+                                                        padding: const EdgeInsets.symmetric(
                                                           horizontal: 8,
-                                                          vertical: 2),
-                                                      decoration: BoxDecoration(
-                                                        color: item.tagColor
-                                                            .withValues(
-                                                                alpha: 0.12),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        item.tag,
-                                                        style: AppTextStyles
-                                                            .bodySmall
-                                                            .copyWith(
-                                                          color: item.tagColor,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 10,
+                                                          vertical: 2,
                                                         ),
-                                                      ),
-                                                    ),
+                                                        decoration: BoxDecoration(
+                                                          color: displayColor.withValues(alpha: 0.12),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          item.tag,
+                                                          style: AppTextStyles.bodySmall.copyWith(
+                                                            color: displayColor,
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 10,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    })(),
                                                     const SizedBox(width: 12),
                                                     Icon(
                                                       Icons.schedule_rounded,
@@ -844,9 +910,9 @@ class HomeDashboardPage extends StatelessWidget {
                         size: 24,
                       ),
                       onPressed: () {
-                        // Start focus timer matching active card duration
                         context.read<TimerBloc>().add(
                               StartTimerEvent(
+                                taskId: activeItem?.id,
                                 durationSeconds: focusMinutes * 60,
                                 taskTitle: activeItem?.title,
                                 subjectName: activeItem?.tag,

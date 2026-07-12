@@ -14,6 +14,7 @@ import 'features/chat/data/datasources/chat_local_data_source.dart';
 import 'features/chat/data/repositories/chat_repository_impl.dart';
 import 'features/chat/domain/repositories/chat_repository.dart';
 import 'features/dashboard/presentation/pages/dashboard_shell.dart';
+import 'features/focus/data/datasources/timer_local_data_source.dart';
 import 'features/focus/presentation/pages/focus_timer_page.dart';
 import 'features/onboarding/presentation/pages/add_subjects_page.dart';
 import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
@@ -44,6 +45,7 @@ void main() async {
   await notificationService.init();
 
   final localDataSource = SubjectLocalDataSourceImpl(box);
+  final timerLocalDataSource = TimerLocalDataSourceImpl(box);
   final repository = SubjectRepositoryImpl(localDataSource);
 
   // Chat persistence layer
@@ -58,6 +60,7 @@ void main() async {
   runApp(MyApp(
     repository: repository,
     chatRepository: chatRepository,
+    timerLocalDataSource: timerLocalDataSource,
     initialScreen: initialScreen,
   ));
 }
@@ -66,12 +69,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   final SubjectRepository repository;
   final ChatRepository chatRepository;
+  final TimerLocalDataSource timerLocalDataSource;
   final AppScreen initialScreen;
 
   const MyApp({
     super.key,
     required this.repository,
     required this.chatRepository,
+    required this.timerLocalDataSource,
     required this.initialScreen,
   });
 
@@ -92,7 +97,9 @@ class MyApp extends StatelessWidget {
             generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
           )..add(LoadSubjectsEvent()),
         ),
-        BlocProvider<TimerBloc>(create: (context) => TimerBloc()),
+        BlocProvider<TimerBloc>(
+          create: (context) => TimerBloc(timerDataSource: timerLocalDataSource),
+        ),
         // ChatBloc reads the current SubjectsBloc state so it can build a
         // context-aware system prompt using real subjects / agenda / gamification.
         BlocProvider<ChatBloc>(
@@ -112,30 +119,37 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
             home: Scaffold(
-              body: BlocBuilder<NavigationBloc, NavigationState>(
-                builder: (context, navState) {
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      final slideAnimation = Tween<Offset>(
-                        begin: const Offset(0.05, 0.0),
-                        end: Offset.zero,
-                      ).animate(animation);
-
-                      return SlideTransition(
-                        position: slideAnimation,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: _buildScreen(navState.currentScreen),
-                  );
+              body: BlocListener<NavigationBloc, NavigationState>(
+                listener: (context, navState) {
+                  if (navState.currentScreen == AppScreen.focusTimer) {
+                    context.read<TimerBloc>().add(SyncTimerEvent());
+                  }
                 },
+                child: BlocBuilder<NavigationBloc, NavigationState>(
+                  builder: (context, navState) {
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        final slideAnimation = Tween<Offset>(
+                          begin: const Offset(0.05, 0.0),
+                          end: Offset.zero,
+                        ).animate(animation);
+
+                        return SlideTransition(
+                          position: slideAnimation,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildScreen(navState.currentScreen),
+                    );
+                  },
+                ),
               ),
             ),
           );
