@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../analytics/presentation/pages/study_analytics_page.dart';
+import '../../../analytics/presentation/bloc/analytics_bloc.dart';
+import '../../../analytics/presentation/bloc/analytics_event.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 import '../../../chat/presentation/pages/coach_chat_page.dart';
@@ -146,6 +148,10 @@ class DashboardShell extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () {
           context.read<NavigationBloc>().add(SwitchDashboardTabEvent(index));
+          if (index == 1) {
+            final subjects = context.read<SubjectsBloc>().state.subjects;
+            context.read<AnalyticsBloc>().add(LoadAnalyticsEvent(subjects));
+          }
         },
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -4,14 +4,16 @@ import 'dart:io';
 import '../../../../core/config/api_config.dart';
 import '../entities/agenda_item.dart';
 import '../entities/subject.dart';
+import '../entities/study_plan_result.dart';
 import '../repositories/subject_repository.dart';
+import 'study_plan_normalizer.dart';
 
 class GenerateStudyPlanUseCase {
   final SubjectRepository repository;
 
   GenerateStudyPlanUseCase(this.repository);
 
-  Future<List<AgendaItem>> call({
+  Future<StudyPlanResult> call({
     required int dailyMinutes,
     required String preferredTime,
   }) async {
@@ -169,40 +171,12 @@ Provide specific, actionable study tasks rather than generic ones.
         ),
       );
     }
-    // Step 1: Calculate actual total
-    int actualTotal = agendaItems.fold(
-      0, (sum, item) => sum + item.durationMinutes
+
+    return finalizeStudyPlan(
+      geminiItems: agendaItems,
+      subjects: subjects,
+      dailyMinutes: dailyMinutes,
+      batchTimestamp: batchTimestamp,
     );
-
-    // Step 2: If total != dailyMinutes, scale
-    if (actualTotal != dailyMinutes) {
-      agendaItems = agendaItems.map((item) {
-        final scaled = (item.durationMinutes * 
-          dailyMinutes / actualTotal).round();
-        return item.copyWith(
-          durationMinutes: scaled.clamp(10, 60)
-        );
-      }).toList();
-    }
-
-    // Step 3: Fix rounding remainder on last task
-    int correctedTotal = agendaItems.fold(
-      0, (sum, item) => sum + item.durationMinutes
-    );
-    int remainder = dailyMinutes - correctedTotal;
-    if (remainder != 0) {
-      final last = agendaItems.last;
-      final correctedLast = (last.durationMinutes + 
-        remainder).clamp(10, 60);
-      agendaItems[agendaItems.length - 1] = 
-        last.copyWith(durationMinutes: correctedLast);
-    }
-
-    // Step 4: Verify
-    final finalTotal = agendaItems.fold(
-      0, (sum, item) => sum + item.durationMinutes
-    );
-
-    return agendaItems;
   }
 }

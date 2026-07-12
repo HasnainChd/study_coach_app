@@ -25,6 +25,14 @@ class DailySchedulePage extends StatelessWidget {
       body: BlocConsumer<SubjectsBloc, SubjectsState>(
         listener: (context, state) {
           if (state.status == SubjectsStatus.planGenerated) {
+            if (state.planBudgetWarningMessage != null) {
+              AppSnackbar.show(
+                context,
+                type: SnackbarType.warning,
+                title: 'Daily budget too small',
+                message: state.planBudgetWarningMessage!,
+              );
+            }
             context.read<NavigationBloc>().add(
                   NavigateToScreenEvent(AppScreen.dashboard),
                 );

@@ -9,9 +9,10 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/timer_bloc.dart';
-import '../../../subjects/domain/entities/agenda_item.dart';
+import '../../../focus/focus_agenda_session.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_event.dart';
+import '../../../subjects/presentation/bloc/subjects_state.dart';
 
 class FocusTimerPage extends StatelessWidget {
   const FocusTimerPage({super.key});
@@ -44,24 +45,38 @@ class FocusTimerPage extends StatelessWidget {
             );
 
             // Dispatch ToggleAgendaItemEvent to mark current task complete
-            final taskTitle = state.taskTitle;
-            if (taskTitle != null) {
-              final subjectsBloc = context.read<SubjectsBloc>();
-              final agendaItems = subjectsBloc.state.agendaItems;
+            final subjectsBloc = context.read<SubjectsBloc>();
+            final agendaItems = subjectsBloc.state.agendaItems;
+            final taskId = state.taskId;
 
-              // Find incomplete item with matching title
-              final matchingItemIndex = agendaItems.indexWhere(
-                (item) => item.title == taskTitle && !item.isCompleted,
+            int matchingItemIndex = -1;
+            if (taskId != null) {
+              matchingItemIndex = agendaItems.indexWhere(
+                (item) => item.id == taskId && !item.isCompleted,
               );
-              if (matchingItemIndex != -1) {
-                subjectsBloc.add(
-                    ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id));
-              }
+            }
+            if (matchingItemIndex == -1 && state.taskTitle != null) {
+              matchingItemIndex = agendaItems.indexWhere(
+                (item) =>
+                    item.title == state.taskTitle && !item.isCompleted,
+              );
+            }
+            if (matchingItemIndex != -1) {
+              subjectsBloc.add(
+                ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id),
+              );
             }
           },
-          child: BlocBuilder<TimerBloc, TimerState>(
-            builder: (context, state) {
-              return Stack(
+          child: BlocBuilder<SubjectsBloc, SubjectsState>(
+            builder: (context, subjectsState) {
+              final agendaItems = subjectsState.agendaItems;
+              return BlocBuilder<TimerBloc, TimerState>(
+                builder: (context, state) {
+                  final sessionNumber =
+                      agendaSessionNumber(agendaItems, state.taskId);
+                  final totalSessions = agendaTotalSessions(agendaItems);
+
+                  return Stack(
                 children: [
                   Column(
                     children: [
@@ -93,7 +108,7 @@ class FocusTimerPage extends StatelessWidget {
 
                       // Session context & indicator dots
                       Text(
-                        'Focus Session ${state.sessionNumber} of 4',
+                        'Focus Session $sessionNumber of $totalSessions',
                         style: AppTextStyles.headingSmall.copyWith(
                           color: isDark
                               ? AppColors.darkTextPrimary
@@ -105,8 +120,8 @@ class FocusTimerPage extends StatelessWidget {
                       // Session dots row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(4, (index) {
-                          final isActive = index == (state.sessionNumber - 1);
+                        children: List.generate(totalSessions, (index) {
+                          final isActive = index == (sessionNumber - 1);
                           return Container(
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             width: 6,
@@ -289,31 +304,45 @@ class FocusTimerPage extends StatelessWidget {
                                           .read<TimerBloc>()
                                           .add(TickEvent(0));
                                     } else {
-                                      final items = context.read<SubjectsBloc>().state.agendaItems;
-                                      final current = state.taskTitle;
-                                      AgendaItem? next;
-                                      for (final item in items) {
-                                        if (!item.isCompleted && item.title != current) {
-                                          next = item;
-                                          break;
-                                        }
+                                      final currentTaskId = state.taskId;
+                                      if (currentTaskId == null) return;
+
+                                      if (agendaItems.indexWhere(
+                                            (item) => item.id == currentTaskId,
+                                          ) <
+                                          0) {
+                                        return;
                                       }
 
-                                      if (next != null) {
-                                        context.read<TimerBloc>().add(
-                                          StartTimerEvent(
-                                            durationSeconds: next.durationMinutes * 60,
-                                            taskTitle: next.title,
-                                            subjectName: next.tag,
-                                            subjectColor: next.tagColor,
-                                            isRunning: false,
-                                          ),
-                                        );
-                                      } else {
-                                        context.read<NavigationBloc>().add(
-                                          NavigateToScreenEvent(AppScreen.dashboard),
-                                        );
+                                      final next = agendaNextIncompleteItemForward(
+                                        agendaItems,
+                                        currentTaskId,
+                                      );
+
+                                      if (next == null) {
+                                        context
+                                            .read<TimerBloc>()
+                                            .add(EndSessionsEvent());
+                                        return;
                                       }
+
+                                      context.read<TimerBloc>().add(
+                                        SkipSessionEvent(
+                                          taskId: next.id,
+                                          durationSeconds:
+                                              next.durationMinutes * 60,
+                                          taskTitle: next.title,
+                                          subjectName: next.tag,
+                                          subjectColor: next.tagColor,
+                                          isRunning: true,
+                                        ),
+                                      );
+                                      AppSnackbar.show(
+                                        context,
+                                        type: SnackbarType.info,
+                                        title: "Skipped to next task",
+                                        message: next.title,
+                                      );
                                     }
                                   },
                                   child: Container(
@@ -364,7 +393,7 @@ class FocusTimerPage extends StatelessWidget {
                     ],
                   ),
 
-                  // Blur overlay when session completes
+                  // Blur overlay when session completes or sessions end via skip
                   if (state.status == TimerStatus.sessionComplete)
                     Positioned.fill(
                       child: BackdropFilter(
@@ -372,12 +401,34 @@ class FocusTimerPage extends StatelessWidget {
                         child: Container(
                           color: Colors.black.withValues(alpha: 0.6),
                           child: Center(
-                            child: SessionCompleteModal(timerState: state),
+                            child: SessionCompleteModal(
+                              timerState: state,
+                              sessionNumber: sessionNumber,
+                              totalSessions: totalSessions,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (state.status == TimerStatus.sessionsEnded)
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          child: Center(
+                            child: SessionsEndedModal(
+                              timerState: state,
+                              sessionNumber: sessionNumber,
+                              totalSessions: totalSessions,
+                            ),
                           ),
                         ),
                       ),
                     ),
                 ],
+              );
+                },
               );
             },
           ),
@@ -389,8 +440,15 @@ class FocusTimerPage extends StatelessWidget {
 
 class SessionCompleteModal extends StatelessWidget {
   final TimerState timerState;
+  final int sessionNumber;
+  final int totalSessions;
 
-  const SessionCompleteModal({super.key, required this.timerState});
+  const SessionCompleteModal({
+    super.key,
+    required this.timerState,
+    required this.sessionNumber,
+    required this.totalSessions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -398,7 +456,9 @@ class SessionCompleteModal extends StatelessWidget {
     final state = timerState;
     final isBreakComplete = state.isBreakComplete;
     final subjectsBloc = context.read<SubjectsBloc>();
-    final nextItem = subjectsBloc.getNextIncompleteItem(state.taskTitle);
+    final agendaItems = subjectsBloc.state.agendaItems;
+    final nextItem = agendaNextItemAtIndex(agendaItems, state.taskId);
+    final isLongBreak = isLongBreakForAgendaSession(sessionNumber);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -468,7 +528,7 @@ class SessionCompleteModal extends StatelessWidget {
 
           // 4. Session counter
           Text(
-            'Session ${state.completedSessions} of 4 complete',
+            'Session $sessionNumber of $totalSessions complete',
             style: AppTextStyles.bodyMedium.copyWith(
               color: isDark
                   ? AppColors.darkTextSecondary
@@ -483,7 +543,7 @@ class SessionCompleteModal extends StatelessWidget {
           Text(
             isBreakComplete
                 ? 'Ready for your next study session?'
-                : (state.isLongBreak
+                : (isLongBreak
                     ? 'Long Break — 15 minutes'
                     : 'Short Break — 5 minutes'),
             style: AppTextStyles.bodySmall.copyWith(
@@ -596,7 +656,9 @@ class SessionCompleteModal extends StatelessWidget {
             // Start Break Button
             GestureDetector(
               onTap: () {
-                context.read<TimerBloc>().add(StartBreakEvent());
+                context.read<TimerBloc>().add(
+                      StartBreakEvent(isLongBreak: isLongBreak),
+                    );
               },
               child: Container(
                 width: double.infinity,
@@ -624,10 +686,8 @@ class SessionCompleteModal extends StatelessWidget {
             // Skip Break Button
             GestureDetector(
               onTap: () {
-                // Mark current task complete
                 final taskTitle = state.taskTitle;
                 if (taskTitle != null) {
-                  final subjectsBloc = context.read<SubjectsBloc>();
                   final agendaItems = subjectsBloc.state.agendaItems;
                   final matchingItemIndex = agendaItems.indexWhere(
                     (item) => item.title == taskTitle && !item.isCompleted,
@@ -640,6 +700,7 @@ class SessionCompleteModal extends StatelessWidget {
 
                 if (nextItem != null) {
                   context.read<TimerBloc>().add(SkipBreakEvent(
+                        nextTaskId: nextItem.id,
                         nextDurationSeconds: nextItem.durationMinutes * 60,
                         nextTaskTitle: nextItem.title,
                         nextSubjectName: nextItem.tag,
@@ -695,6 +756,7 @@ class SessionCompleteModal extends StatelessWidget {
                   }
 
                   context.read<TimerBloc>().add(StartTimerEvent(
+                        taskId: nextItem.id,
                         durationSeconds: nextItem.durationMinutes * 60,
                         taskTitle: nextItem.title,
                         subjectName: nextItem.tag,
@@ -803,6 +865,119 @@ class SessionCompleteModal extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class SessionsEndedModal extends StatelessWidget {
+  final TimerState timerState;
+  final int sessionNumber;
+  final int totalSessions;
+
+  const SessionsEndedModal({
+    super.key,
+    required this.timerState,
+    required this.sessionNumber,
+    required this.totalSessions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkOverlayBg.withValues(alpha: 0.95)
+            : AppColors.lightCardBg.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.15),
+            ),
+            child: const Icon(
+              Icons.self_improvement_rounded,
+              color: AppColors.primary,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "You've finished today's focus sessions",
+            style: AppTextStyles.headingSmall.copyWith(
+              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Session $sessionNumber of $totalSessions',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Skipped tasks stay on your agenda until you mark them complete on Home.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary.withValues(alpha: 0.8)
+                  : AppColors.lightTextSecondary.withValues(alpha: 0.8),
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () {
+              context.read<TimerBloc>().add(ResetTimerEvent());
+              context
+                  .read<NavigationBloc>()
+                  .add(NavigateToScreenEvent(AppScreen.dashboard));
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.subjectPurple],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+              child: const Text(
+                'Back to Home',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         ],
       ),
     );

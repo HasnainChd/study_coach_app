@@ -220,6 +220,14 @@ class SettingsPage extends StatelessWidget {
           listener: (context, state) {
             if (state.status == SubjectsStatus.planGenerated) {
               context.read<NavigationBloc>().add(SwitchDashboardTabEvent(0));
+              if (state.planBudgetWarningMessage != null) {
+                AppSnackbar.show(
+                  context,
+                  type: SnackbarType.warning,
+                  title: 'Daily budget too small',
+                  message: state.planBudgetWarningMessage!,
+                );
+              }
               AppSnackbar.show(
                 context,
                 type: SnackbarType.success,
