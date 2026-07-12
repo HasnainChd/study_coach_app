@@ -327,6 +327,14 @@ class HomeDashboardPage extends StatelessWidget {
             (!previous.streakResetTriggered && current.streakResetTriggered),
         listener: (context, state) {
           if (state.status == SubjectsStatus.planGenerated) {
+            if (state.planBudgetWarningMessage != null) {
+              AppSnackbar.show(
+                context,
+                type: SnackbarType.warning,
+                title: 'Daily budget too small',
+                message: state.planBudgetWarningMessage!,
+              );
+            }
             AppSnackbar.show(
               context,
               type: SnackbarType.success,

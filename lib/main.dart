@@ -5,6 +5,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/analytics/data/datasources/study_history_local_data_source.dart';
+import 'features/analytics/data/repositories/study_history_repository_impl.dart';
+import 'features/analytics/domain/repositories/study_history_repository.dart';
+import 'features/analytics/presentation/bloc/analytics_bloc.dart';
 import 'features/bloc/chat_bloc.dart';
 import 'features/bloc/navigation_bloc.dart';
 import 'features/bloc/subjects_bloc.dart';
@@ -40,6 +44,9 @@ void main() async {
   // Dedicated box for chat message history
   final chatBox = await Hive.openBox('chat_messages_box');
 
+  // Dedicated box for completed-task study history (analytics)
+  final studyHistoryBox = await Hive.openBox('study_history_box');
+
   // Initialize notifications service
   final notificationService = NotificationService();
   await notificationService.init();
@@ -52,6 +59,11 @@ void main() async {
   final chatLocalDataSource = ChatLocalDataSourceImpl(chatBox);
   final chatRepository = ChatRepositoryImpl(chatLocalDataSource);
 
+  final studyHistoryLocalDataSource =
+      StudyHistoryLocalDataSourceImpl(studyHistoryBox);
+  final studyHistoryRepository =
+      StudyHistoryRepositoryImpl(studyHistoryLocalDataSource);
+
   // Read onboarding complete flag
   final hasCompletedOnboarding = await repository.getHasCompletedOnboarding();
   final initialScreen =
@@ -60,6 +72,7 @@ void main() async {
   runApp(MyApp(
     repository: repository,
     chatRepository: chatRepository,
+    studyHistoryRepository: studyHistoryRepository,
     timerLocalDataSource: timerLocalDataSource,
     initialScreen: initialScreen,
   ));
@@ -69,6 +82,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final SubjectRepository repository;
   final ChatRepository chatRepository;
+  final StudyHistoryRepository studyHistoryRepository;
   final TimerLocalDataSource timerLocalDataSource;
   final AppScreen initialScreen;
 
@@ -76,6 +90,7 @@ class MyApp extends StatelessWidget {
     super.key,
     required this.repository,
     required this.chatRepository,
+    required this.studyHistoryRepository,
     required this.timerLocalDataSource,
     required this.initialScreen,
   });
@@ -95,7 +110,13 @@ class MyApp extends StatelessWidget {
             addSubjectUseCase: AddSubjectUseCase(repository),
             removeSubjectUseCase: RemoveSubjectUseCase(repository),
             generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
+            studyHistoryRepository: studyHistoryRepository,
           )..add(LoadSubjectsEvent()),
+        ),
+        BlocProvider<AnalyticsBloc>(
+          create: (context) => AnalyticsBloc(
+            studyHistoryRepository: studyHistoryRepository,
+          ),
         ),
         BlocProvider<TimerBloc>(
           create: (context) => TimerBloc(timerDataSource: timerLocalDataSource),

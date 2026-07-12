@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../analytics/domain/entities/study_history_entry.dart';
+import '../../../analytics/domain/repositories/study_history_repository.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/subject.dart';
 import '../../domain/entities/agenda_item.dart';
@@ -29,6 +31,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   final AddSubjectUseCase addSubjectUseCase;
   final RemoveSubjectUseCase removeSubjectUseCase;
   final GenerateStudyPlanUseCase generateStudyPlanUseCase;
+  final StudyHistoryRepository studyHistoryRepository;
 
   Subject? _lastDeletedSubject;
   List<AgendaItem>? _lastDeletedAgendaItems;
@@ -39,6 +42,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     required this.addSubjectUseCase,
     required this.removeSubjectUseCase,
     required this.generateStudyPlanUseCase,
+    required this.studyHistoryRepository,
   }) : super(SubjectsState(
           subjects: const [],
           agendaItems: const [],
@@ -281,9 +285,11 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     try {
       bool shouldAwardXp = false;
       bool shouldDeductXp = false;
+      AgendaItem? toggledItem;
 
       final updatedAgenda = state.agendaItems.map((item) {
         if (item.id == event.id) {
+          toggledItem = item;
           final nextCompleted = !item.isCompleted;
           var nextHasEarnedXp = item.hasEarnedXp;
           if (nextCompleted && !item.hasEarnedXp) {
@@ -319,6 +325,22 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         }
         await repository.saveXpProgress(currentXp);
 
+        final item = toggledItem;
+        if (item != null) {
+          final today = DateTime.now().toIso8601String().substring(0, 10);
+          await studyHistoryRepository.addEntry(
+            StudyHistoryEntry(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              agendaItemId: item.id,
+              date: today,
+              subjectName: item.tag,
+              subjectId: _resolveSubjectId(state.subjects, item.tag),
+              durationMinutes: item.durationMinutes,
+              xpAwarded: xpPerTask,
+            ),
+          );
+        }
+
         // Auto claim streak on completing study tasks for the day
         final today = DateTime.now().toIso8601String().substring(0, 10);
         if (lastClaimed != today) {
@@ -340,6 +362,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         if (currentLevel != state.level) {
           await repository.saveLevel(currentLevel);
         }
+        await studyHistoryRepository.removeByAgendaItemId(event.id);
       }
 
       final calculatedSubjects = _calculateSubjectsWithProgress(state.subjects, updatedAgenda);
@@ -359,6 +382,16 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
 
   double _xpPerAgendaTask(int totalTasks) {
     return totalTasks > 0 ? (1.0 / totalTasks) : 0.15;
+  }
+
+  String? _resolveSubjectId(List<Subject> subjects, String subjectName) {
+    for (final subject in subjects) {
+      if (subject.name.toLowerCase().trim() ==
+          subjectName.toLowerCase().trim()) {
+        return subject.id;
+      }
+    }
+    return null;
   }
 
   Future<void> _onUpdateSettingsPreferences(
@@ -386,13 +419,14 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     emit(state.copyWith(
       status: SubjectsStatus.planGenerating,
       errorMessage: null,
+      clearPlanBudgetWarning: true,
     ));
     try {
-      final agendaItems = await generateStudyPlanUseCase(
+      final result = await generateStudyPlanUseCase(
         dailyMinutes: state.dailyStudyMinutes,
         preferredTime: state.preferredTime,
       );
-      await repository.saveAgendaItems(agendaItems);
+      await repository.saveAgendaItems(result.agendaItems);
 
       // Persist that onboarding is completed
       await repository.saveHasCompletedOnboarding(true);
@@ -406,7 +440,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
 
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,
-        agendaItems: agendaItems,
+        agendaItems: result.agendaItems,
+        planBudgetWarningMessage: result.budgetWarningMessage,
         errorMessage: null,
       ));
     } catch (e) {
@@ -425,16 +460,17 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     emit(state.copyWith(
       status: SubjectsStatus.planGenerating,
       errorMessage: null,
+      clearPlanBudgetWarning: true,
     ));
     try {
       await repository.saveDailyStudyMinutes(event.dailyMinutes);
       await repository.savePreferredTime(event.preferredTime);
 
-      final agendaItems = await generateStudyPlanUseCase(
+      final result = await generateStudyPlanUseCase(
         dailyMinutes: event.dailyMinutes,
         preferredTime: event.preferredTime,
       );
-      await repository.saveAgendaItems(agendaItems);
+      await repository.saveAgendaItems(result.agendaItems);
 
       // Trigger local study reminder notification (in 15 minutes) if enabled
       if (state.notificationsEnabled) {
@@ -447,7 +483,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         status: SubjectsStatus.planGenerated,
         dailyStudyMinutes: event.dailyMinutes,
         preferredTime: event.preferredTime,
-        agendaItems: agendaItems,
+        agendaItems: result.agendaItems,
+        planBudgetWarningMessage: result.budgetWarningMessage,
         errorMessage: null,
       ));
     } catch (e) {

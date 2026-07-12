@@ -24,6 +24,7 @@ class SubjectsState {
   final int level;
   final String lastStreakClaimedDate;
   final bool streakResetTriggered;
+  final String? planBudgetWarningMessage;
 
   SubjectsState({
     required this.subjects,
@@ -40,6 +41,7 @@ class SubjectsState {
     this.level = 1,
     this.lastStreakClaimedDate = '',
     this.streakResetTriggered = false,
+    this.planBudgetWarningMessage,
   });
 
   SubjectsState copyWith({
@@ -58,6 +60,8 @@ class SubjectsState {
     int? level,
     String? lastStreakClaimedDate,
     bool? streakResetTriggered,
+    String? planBudgetWarningMessage,
+    bool clearPlanBudgetWarning = false,
   }) {
     return SubjectsState(
       subjects: subjects ?? this.subjects,
@@ -76,6 +80,9 @@ class SubjectsState {
       level: level ?? this.level,
       lastStreakClaimedDate: lastStreakClaimedDate ?? this.lastStreakClaimedDate,
       streakResetTriggered: streakResetTriggered ?? this.streakResetTriggered,
+      planBudgetWarningMessage: clearPlanBudgetWarning
+          ? null
+          : (planBudgetWarningMessage ?? this.planBudgetWarningMessage),
     );
   }
 }
