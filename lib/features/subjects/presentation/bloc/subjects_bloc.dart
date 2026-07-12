@@ -30,6 +30,9 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   final RemoveSubjectUseCase removeSubjectUseCase;
   final GenerateStudyPlanUseCase generateStudyPlanUseCase;
 
+  Subject? _lastDeletedSubject;
+  List<AgendaItem>? _lastDeletedAgendaItems;
+
   SubjectsBloc({
     required this.repository,
     required this.getSubjectsUseCase,
@@ -45,15 +48,18 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     on<LoadSubjectsEvent>(_onLoadSubjects);
     on<AddSubjectEvent>(_onAddSubject);
     on<RemoveSubjectEvent>(_onRemoveSubject);
+    on<UndoRemoveSubjectEvent>(_onUndoRemoveSubject);
     on<UpdateDailyMinutesEvent>(_onUpdateDailyMinutes);
     on<UpdatePreferredTimeEvent>(_onUpdatePreferredTime);
     on<ToggleNotificationsEvent>(_onToggleNotifications);
     on<ToggleAgendaItemEvent>(_onToggleAgendaItem);
     on<UpdateSettingsPreferencesEvent>(_onUpdateSettingsPreferences);
     on<GenerateStudyPlanEvent>(_onGenerateStudyPlan);
+    on<RegenerateStudyPlanEvent>(_onRegenerateStudyPlan);
     on<ClaimStreakEvent>(_onClaimStreak);
     on<AddXpEvent>(_onAddXp);
     on<SelectAgendaItemEvent>(_onSelectAgendaItem);
+    on<UpdateSubjectEvent>(_onUpdateSubject);
   }
 
   AgendaItem? getNextIncompleteItem(String? currentTaskTitle) {
@@ -82,6 +88,9 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     try {
       var subjects = await getSubjectsUseCase();
       var agenda = await repository.getAgendaItems();
+      final calculatedSubjects = _calculateSubjectsWithProgress(subjects, agenda);
+      await repository.saveSubjects(calculatedSubjects);
+      subjects = calculatedSubjects;
       final dailyMinutes =
           normalizeDailyStudyMinutes(await repository.getDailyStudyMinutes());
       final preferredTime = await repository.getPreferredTime();
@@ -167,15 +176,18 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         name: event.name,
         color: event.color,
         examDate: event.examDate,
-        progress: 0.10,
+        progress: 0.0,
       );
 
       await addSubjectUseCase(subject);
 
       final updatedSubjects = await getSubjectsUseCase();
+      final calculated = _calculateSubjectsWithProgress(updatedSubjects, state.agendaItems);
+      await repository.saveSubjects(calculated);
+
       emit(state.copyWith(
         status: SubjectsStatus.success,
-        subjects: updatedSubjects,
+        subjects: calculated,
       ));
     } catch (e) {
       final msg = e is ArgumentError ? e.message.toString() : e.toString();
@@ -192,11 +204,36 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   ) async {
     emit(state.copyWith(status: SubjectsStatus.loading));
     try {
+      Subject? oldSubject;
+      try {
+        oldSubject = state.subjects.firstWhere((s) => s.id == event.id);
+      } catch (_) {}
+
+      if (oldSubject != null) {
+        _lastDeletedSubject = oldSubject;
+        _lastDeletedAgendaItems = state.agendaItems.where(
+          (item) => item.tag.toLowerCase() == oldSubject!.name.toLowerCase()
+        ).toList();
+      }
+
       await removeSubjectUseCase(event.id);
       final updatedSubjects = await getSubjectsUseCase();
+
+      var updatedAgenda = state.agendaItems;
+      if (oldSubject != null) {
+        updatedAgenda = state.agendaItems.where(
+          (item) => item.tag.toLowerCase() != oldSubject!.name.toLowerCase()
+        ).toList();
+        await repository.saveAgendaItems(updatedAgenda);
+      }
+
+      final calculated = _calculateSubjectsWithProgress(updatedSubjects, updatedAgenda);
+      await repository.saveSubjects(calculated);
+
       emit(state.copyWith(
         status: SubjectsStatus.success,
-        subjects: updatedSubjects,
+        subjects: calculated,
+        agendaItems: updatedAgenda,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -243,14 +280,18 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   ) async {
     try {
       bool shouldAwardXp = false;
+      bool shouldDeductXp = false;
 
       final updatedAgenda = state.agendaItems.map((item) {
         if (item.id == event.id) {
           final nextCompleted = !item.isCompleted;
-          bool nextHasEarnedXp = item.hasEarnedXp;
+          var nextHasEarnedXp = item.hasEarnedXp;
           if (nextCompleted && !item.hasEarnedXp) {
             shouldAwardXp = true;
             nextHasEarnedXp = true;
+          } else if (!nextCompleted && item.hasEarnedXp) {
+            shouldDeductXp = true;
+            nextHasEarnedXp = false;
           }
           return item.copyWith(
             isCompleted: nextCompleted,
@@ -267,10 +308,9 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       var currentLevel = state.level;
       var currentStreak = state.streak;
       var lastClaimed = state.lastStreakClaimedDate;
+      final xpPerTask = _xpPerAgendaTask(state.agendaItems.length);
 
       if (shouldAwardXp) {
-        final totalTasks = state.agendaItems.length;
-        final xpPerTask = totalTasks > 0 ? (1.0 / totalTasks) : 0.15;
         currentXp += xpPerTask;
         if (currentXp >= 0.99) {
           currentLevel += 1;
@@ -287,10 +327,27 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
           await repository.saveStreak(currentStreak);
           await repository.saveLastStreakClaimedDate(today);
         }
+      } else if (shouldDeductXp) {
+        currentXp -= xpPerTask;
+        if (currentXp < 0 && currentLevel > 1) {
+          currentLevel -= 1;
+          currentXp += 1.0;
+        }
+        if (currentXp < 0) {
+          currentXp = 0.0;
+        }
+        await repository.saveXpProgress(currentXp);
+        if (currentLevel != state.level) {
+          await repository.saveLevel(currentLevel);
+        }
       }
+
+      final calculatedSubjects = _calculateSubjectsWithProgress(state.subjects, updatedAgenda);
+      await repository.saveSubjects(calculatedSubjects);
 
       emit(state.copyWith(
         agendaItems: updatedAgenda,
+        subjects: calculatedSubjects,
         xpProgress: currentXp,
         level: currentLevel,
         streak: currentStreak,
@@ -298,6 +355,10 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       ));
 
     } catch (_) {}
+  }
+
+  double _xpPerAgendaTask(int totalTasks) {
+    return totalTasks > 0 ? (1.0 / totalTasks) : 0.15;
   }
 
   Future<void> _onUpdateSettingsPreferences(
@@ -357,6 +418,47 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     }
   }
 
+  Future<void> _onRegenerateStudyPlan(
+    RegenerateStudyPlanEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    emit(state.copyWith(
+      status: SubjectsStatus.planGenerating,
+      errorMessage: null,
+    ));
+    try {
+      await repository.saveDailyStudyMinutes(event.dailyMinutes);
+      await repository.savePreferredTime(event.preferredTime);
+
+      final agendaItems = await generateStudyPlanUseCase(
+        dailyMinutes: event.dailyMinutes,
+        preferredTime: event.preferredTime,
+      );
+      await repository.saveAgendaItems(agendaItems);
+
+      // Trigger local study reminder notification (in 15 minutes) if enabled
+      if (state.notificationsEnabled) {
+        try {
+          await NotificationService().scheduleStudyReminder(15);
+        } catch (_) {}
+      }
+
+      emit(state.copyWith(
+        status: SubjectsStatus.planGenerated,
+        dailyStudyMinutes: event.dailyMinutes,
+        preferredTime: event.preferredTime,
+        agendaItems: agendaItems,
+        errorMessage: null,
+      ));
+    } catch (e) {
+      final message = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(
+        status: SubjectsStatus.failure,
+        errorMessage: message,
+      ));
+    }
+  }
+
   Future<void> _onClaimStreak(
     ClaimStreakEvent event,
     Emitter<SubjectsState> emit,
@@ -396,5 +498,126 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) {
     emit(state.copyWith(selectedAgendaItemId: event.id));
+  }
+
+  Future<void> _onUndoRemoveSubject(
+    UndoRemoveSubjectEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    if (_lastDeletedSubject == null) return;
+    emit(state.copyWith(status: SubjectsStatus.loading));
+    try {
+      await addSubjectUseCase(_lastDeletedSubject!);
+      
+      var updatedAgenda = state.agendaItems;
+      if (_lastDeletedAgendaItems != null && _lastDeletedAgendaItems!.isNotEmpty) {
+        final existingIds = state.agendaItems.map((item) => item.id).toSet();
+        final itemsToRestore = _lastDeletedAgendaItems!.where((item) => !existingIds.contains(item.id));
+        updatedAgenda = [...state.agendaItems, ...itemsToRestore];
+        await repository.saveAgendaItems(updatedAgenda);
+      }
+
+      final updatedSubjects = await getSubjectsUseCase();
+      final calculated = _calculateSubjectsWithProgress(updatedSubjects, updatedAgenda);
+      await repository.saveSubjects(calculated);
+
+      _lastDeletedSubject = null;
+      _lastDeletedAgendaItems = null;
+
+      emit(state.copyWith(
+        status: SubjectsStatus.success,
+        subjects: calculated,
+        agendaItems: updatedAgenda,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        status: SubjectsStatus.failure,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onUpdateSubject(
+    UpdateSubjectEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    emit(state.copyWith(status: SubjectsStatus.loading));
+    try {
+      final existingSubjects = await getSubjectsUseCase();
+      final index = existingSubjects.indexWhere((s) => s.id == event.id);
+      if (index == -1) {
+        throw ArgumentError('Subject not found');
+      }
+
+      final oldSubject = existingSubjects[index];
+
+      final updatedSubject = oldSubject.copyWith(
+        name: event.name,
+        color: event.color,
+        examDate: event.examDate,
+      );
+
+      if (oldSubject.name.toLowerCase() != event.name.toLowerCase()) {
+        if (event.name.trim().isEmpty) {
+          throw ArgumentError('Subject name cannot be empty');
+        }
+        if (event.name.length > 40) {
+          throw ArgumentError('Subject name cannot exceed 40 characters');
+        }
+        if (existingSubjects.any((s) => s.name.toLowerCase() == event.name.trim().toLowerCase())) {
+          throw ArgumentError('Subject with this name already exists');
+        }
+      }
+
+      final updatedList = List<Subject>.from(existingSubjects)..[index] = updatedSubject;
+      await repository.saveSubjects(updatedList);
+
+      var updatedAgenda = state.agendaItems;
+      if (oldSubject.name.toLowerCase() != event.name.toLowerCase()) {
+        updatedAgenda = state.agendaItems.map((item) {
+          if (item.tag.toLowerCase() == oldSubject.name.toLowerCase()) {
+            return item.copyWith(
+              tag: event.name,
+              tagColor: event.color,
+            );
+          }
+          return item;
+        }).toList();
+        await repository.saveAgendaItems(updatedAgenda);
+      }
+
+      final calculated = _calculateSubjectsWithProgress(updatedList, updatedAgenda);
+      await repository.saveSubjects(calculated);
+
+      emit(state.copyWith(
+        status: SubjectsStatus.success,
+        subjects: calculated,
+        agendaItems: updatedAgenda,
+      ));
+    } catch (e) {
+      final msg = e is ArgumentError ? e.message.toString() : e.toString();
+      emit(state.copyWith(
+        status: SubjectsStatus.failure,
+        errorMessage: msg,
+      ));
+    }
+  }
+
+  List<Subject> _calculateSubjectsWithProgress(
+    List<Subject> subjects,
+    List<AgendaItem> agendaItems,
+  ) {
+    return subjects.map((subject) {
+      final subjectTasks = agendaItems.where(
+        (item) => item.tag.toLowerCase() == subject.name.toLowerCase()
+      ).toList();
+
+      if (subjectTasks.isEmpty) {
+        return subject.copyWith(progress: 0.0);
+      }
+
+      final completedCount = subjectTasks.where((item) => item.isCompleted).length;
+      return subject.copyWith(progress: completedCount / subjectTasks.length);
+    }).toList();
   }
 }

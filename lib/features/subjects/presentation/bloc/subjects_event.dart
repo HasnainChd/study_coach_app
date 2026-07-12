@@ -61,6 +61,12 @@ class UpdateSettingsPreferencesEvent extends SubjectsEvent {
 
 class GenerateStudyPlanEvent extends SubjectsEvent {}
 
+class RegenerateStudyPlanEvent extends SubjectsEvent {
+  final int dailyMinutes;
+  final String preferredTime;
+  RegenerateStudyPlanEvent(this.dailyMinutes, this.preferredTime);
+}
+
 class ClaimStreakEvent extends SubjectsEvent {}
 
 class AddXpEvent extends SubjectsEvent {
@@ -72,4 +78,20 @@ class AddXpEvent extends SubjectsEvent {
 class SelectAgendaItemEvent extends SubjectsEvent {
   final String id;
   SelectAgendaItemEvent(this.id);
+}
+
+class UndoRemoveSubjectEvent extends SubjectsEvent {}
+
+class UpdateSubjectEvent extends SubjectsEvent {
+  final String id;
+  final String name;
+  final Color color;
+  final DateTime? examDate;
+
+  UpdateSubjectEvent({
+    required this.id,
+    required this.name,
+    required this.color,
+    this.examDate,
+  });
 }

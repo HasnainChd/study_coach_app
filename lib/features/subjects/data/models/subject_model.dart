@@ -28,7 +28,7 @@ class SubjectModel extends Subject {
       examDate: map['examDate'] != null
           ? DateTime.parse(map['examDate'] as String)
           : null,
-      progress: (map['progress'] as num?)?.toDouble() ?? 0.50,
+      progress: (map['progress'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

@@ -7,6 +7,7 @@ import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/secondary_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../bloc/subjects_bloc.dart';
+import 'subject_detail_page.dart';
 
 class SubjectManagerPage extends StatelessWidget {
   const SubjectManagerPage({super.key});
@@ -15,6 +16,7 @@ class SubjectManagerPage extends StatelessWidget {
     final nameController = TextEditingController();
     int selectedColorIndex = 0;
     DateTime? selectedDate;
+    String? errorMessage;
 
     showModalBottomSheet(
       context: context,
@@ -62,8 +64,13 @@ class SubjectManagerPage extends StatelessWidget {
                           color:
                               isDark ? Colors.white : AppColors.lightTextPrimary,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Enter subject name...',
+                          errorText: errorMessage,
+                          errorStyle: const TextStyle(
+                            color: Color(0xFFEF4444),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -172,8 +179,35 @@ class SubjectManagerPage extends StatelessWidget {
                         text: 'Add Subject',
                         onPressed: () {
                           final name = nameController.text.trim();
-                          if (name.isEmpty) return;
-              
+                          if (name.isEmpty) {
+                            setModalState(() {
+                              errorMessage = 'Subject name cannot be empty';
+                            });
+                            return;
+                          }
+                          if (name.length > 40) {
+                            setModalState(() {
+                              errorMessage = 'Subject name cannot exceed 40 characters';
+                            });
+                            return;
+                          }
+                          
+                          final currentSubjects = context.read<SubjectsBloc>().state.subjects;
+                          final exists = currentSubjects.any(
+                            (s) => s.name.toLowerCase() == name.toLowerCase()
+                          );
+                          if (exists) {
+                            setModalState(() {
+                              errorMessage = 'Subject with this name already exists';
+                            });
+                            return;
+                          }
+
+                          // Clear error and add
+                          setModalState(() {
+                            errorMessage = null;
+                          });
+
                           context.read<SubjectsBloc>().add(
                                 AddSubjectEvent(
                                   name: name,
@@ -184,9 +218,9 @@ class SubjectManagerPage extends StatelessWidget {
                               );
                           AppSnackbar.show(
                             context,
-                            type: SnackbarType.success,
+                            type: SnackbarType.info,
                             title: 'Subject Added',
-                            message: '$name has been added to your plan.',
+                            message: 'Regenerate plan to include $name in tomorrow\'s schedule.',
                           );
                           Navigator.pop(modalContext);
                         },
@@ -221,6 +255,152 @@ class SubjectManagerPage extends StatelessWidget {
     return 'EXAM: ${months[date.month - 1]} ${date.day}';
   }
 
+  Widget _buildExamDateChip(Subject subject, bool isDark) {
+    final examDate = subject.examDate;
+    final Color chipColor;
+    final String text;
+
+    if (examDate == null) {
+      chipColor = const Color(0xFF555577);
+      text = 'No exam set';
+    } else {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final exam = DateTime(
+        examDate.year, 
+        examDate.month, 
+        examDate.day
+      );
+      final days = exam.difference(today).inDays;
+
+      if (days < 0) {
+        chipColor = const Color(0xFFFF4D6A);
+        text = 'EXAM PASSED';
+      } else if (days == 0) {
+        chipColor = const Color(0xFFFF4D6A);
+        text = 'EXAM TODAY!';
+      } else if (days <= 7) {
+        chipColor = const Color(0xFFFF4D6A);
+        text = 'EXAM IN $days DAYS';
+      } else if (days <= 14) {
+        chipColor = const Color(0xFFFF8C42);
+        text = _formatMonthDay(examDate);
+      } else {
+        chipColor = const Color(0xFF555577);
+        text = _formatMonthDay(examDate);
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDismissibleBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20.0),
+      child: const Icon(
+        Icons.delete_outline_rounded,
+        color: Colors.white,
+        size: 28,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.book_rounded,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No subjects yet',
+              style: AppTextStyles.headingSmall.copyWith(
+                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add subjects to start organizing and generating your study plan.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 32),
+            GestureDetector(
+              onTap: () => _showAddSubjectBottomSheet(context, isDark),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    width: 1.5,
+                  ),
+                  color: isDark
+                      ? AppColors.darkCardBg.withValues(alpha: 0.4)
+                      : AppColors.lightCardBg.withValues(alpha: 0.4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_rounded,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Add New Subject',
+                      style: AppTextStyles.buttonText.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -246,58 +426,48 @@ class SubjectManagerPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Subjects list
             Expanded(
               child: BlocBuilder<SubjectsBloc, SubjectsState>(
                 builder: (context, state) {
+                  if (state.subjects.isEmpty) {
+                    return _buildEmptyState(context, isDark);
+                  }
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    itemCount:
-                        state.subjects.length + 1, // list + bottom add button
+                    itemCount: state.subjects.length + 1, // list + bottom add button
                     itemBuilder: (context, index) {
                       if (index == state.subjects.length) {
                         // Dashed Outlined Add button
                         return Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 24.0, top: 8.0),
+                          padding: const EdgeInsets.only(bottom: 24.0, top: 8.0),
                           child: GestureDetector(
-                            onTap: () =>
-                                _showAddSubjectBottomSheet(context, isDark),
+                            onTap: () => _showAddSubjectBottomSheet(context, isDark),
                             child: Container(
                               height: 56,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightBorder,
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                                   width: 1.5,
-                                  style: BorderStyle
-                                      .solid, // solid fallback for dashed style
+                                  style: BorderStyle.solid,
                                 ),
                                 color: isDark
-                                    ? AppColors.darkCardBg
-                                        .withValues(alpha: 0.4)
-                                    : AppColors.lightCardBg
-                                        .withValues(alpha: 0.4),
+                                    ? AppColors.darkCardBg.withValues(alpha: 0.4)
+                                    : AppColors.lightCardBg.withValues(alpha: 0.4),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.add_rounded,
-                                    color: isDark
-                                        ? AppColors.darkTextSecondary
-                                        : AppColors.lightTextSecondary,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Add New Subject',
                                     style: AppTextStyles.buttonText.copyWith(
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.lightTextSecondary,
+                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -313,164 +483,129 @@ class SubjectManagerPage extends StatelessWidget {
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkCardBg
-                                : AppColors.lightCardBg,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBorder,
-                              width: 1.2,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: IntrinsicHeight(
-                              child: Row(
-                                children: [
-                                  // Left side color stripe
-                                  Container(
-                                    width: 5,
-                                    color: subject.color,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Main content column
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 18.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          // Title & Chevron Row
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                        child: Dismissible(
+                          key: Key(subject.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(),
+                          secondaryBackground: _buildDismissibleBackground(),
+                          onDismissed: (direction) {
+                            final deletedName = subject.name;
+                            context.read<SubjectsBloc>().add(RemoveSubjectEvent(subject.id));
+                            AppSnackbar.show(
+                              context,
+                              type: SnackbarType.warning,
+                              title: 'Subject Removed',
+                              message: '$deletedName and its tasks have been removed.',
+                              onUndo: () {
+                                context.read<SubjectsBloc>().add(UndoRemoveSubjectEvent());
+                              },
+                            );
+                          },
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SubjectDetailPage(subjectId: subject.id),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    children: [
+                                      // Left side color stripe
+                                      Container(
+                                        width: 5,
+                                        color: subject.color,
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Main content column
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 18.0),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                subject.name,
-                                                style: AppTextStyles
-                                                    .headingSmall
-                                                    .copyWith(
-                                                  color: isDark
-                                                      ? AppColors
-                                                          .darkTextPrimary
-                                                      : AppColors
-                                                          .lightTextPrimary,
-                                                  fontSize: 16,
+                                              // Title & Chevron Row
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    subject.name,
+                                                    style: AppTextStyles.headingSmall.copyWith(
+                                                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(right: 16.0),
+                                                    child: Icon(
+                                                      Icons.chevron_right_rounded,
+                                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              _buildExamDateChip(subject, isDark),
+                                              const SizedBox(height: 16),
+                                              // Progress Bar Row
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 16.0),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      'PROGRESS',
+                                                      style: AppTextStyles.labelSmall.copyWith(
+                                                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '$percentProgress%',
+                                                      style: TextStyle(
+                                                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
+                                              const SizedBox(height: 8),
+                                              // Progress Bar
                                               Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: 16.0),
-                                                child: Icon(
-                                                  Icons.chevron_right_rounded,
-                                                  color: isDark
-                                                      ? AppColors
-                                                          .darkTextSecondary
-                                                      : AppColors
-                                                          .lightTextSecondary,
-                                                  size: 20,
+                                                padding: const EdgeInsets.only(right: 16.0),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  child: LinearProgressIndicator(
+                                                    value: subject.progress,
+                                                    backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(subject.color),
+                                                    minHeight: 5,
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          if (subject.examDate != null) ...[
-                                            // Exam Pill Tag
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: isDark
-                                                    ? AppColors.darkBorder
-                                                        .withValues(alpha: 0.6)
-                                                    : AppColors.lightBorder
-                                                        .withValues(alpha: 0.6),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                _formatMonthDay(subject.examDate),
-                                                style: TextStyle(
-                                                  color: isDark
-                                                      ? AppColors
-                                                          .darkTextSecondary
-                                                      : AppColors
-                                                          .lightTextSecondary,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ] else ...[
-                                            const SizedBox(height: 8),
-                                          ],
-                                          // Progress Bar Row
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 16.0),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  'PROGRESS',
-                                                  style: AppTextStyles
-                                                      .labelSmall
-                                                      .copyWith(
-                                                    color: isDark
-                                                        ? AppColors
-                                                            .darkTextSecondary
-                                                        : AppColors
-                                                            .lightTextSecondary,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  '$percentProgress%',
-                                                  style: TextStyle(
-                                                    color: isDark
-                                                        ? Colors.white
-                                                        : AppColors
-                                                            .lightTextPrimary,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          // Progress Bar
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 16.0),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              child: LinearProgressIndicator(
-                                                value: subject.progress,
-                                                backgroundColor: isDark
-                                                    ? AppColors.darkBorder
-                                                    : AppColors.lightBorder,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(subject.color),
-                                                minHeight: 5,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),

@@ -12,7 +12,7 @@ class Subject {
     required this.name,
     required this.color,
     this.examDate,
-    this.progress = 0.50,
+    this.progress = 0.0,
   });
 
   Subject copyWith({
