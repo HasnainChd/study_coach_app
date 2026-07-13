@@ -16,6 +16,19 @@ import '../../../home/presentation/pages/home_dashboard_page.dart';
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  static const String _studyPlanUpdatedMessage =
+      'Daily study time updated. Regenerate your plan in Settings when '
+      "you're ready to apply it.";
+
+  void _showStudyPlanUpdatedSnackbar(BuildContext context) {
+    AppSnackbar.show(
+      context,
+      type: SnackbarType.info,
+      title: 'Study plan setting updated',
+      message: _studyPlanUpdatedMessage,
+    );
+  }
+
   void _showEditNameDialog(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -460,6 +473,163 @@ class SettingsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
 
+                      // DAILY STUDY PLAN
+                      Text(
+                        'DAILY STUDY PLAN',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Daily Study Time',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightTextPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  '${state.dailyStudyMinutes} min',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.primaryLight
+                                        : AppColors.primaryDark,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Slider(
+                              value: state.dailyStudyMinutes.toDouble(),
+                              min: 15,
+                              max: 240,
+                              divisions: 15,
+                              onChanged: state.status ==
+                                      SubjectsStatus.planGenerating
+                                  ? null
+                                  : (val) {
+                                      context.read<SubjectsBloc>().add(
+                                            UpdateDailyMinutesEvent(
+                                              val.toInt(),
+                                            ),
+                                          );
+                                    },
+                              onChangeEnd: state.status ==
+                                      SubjectsStatus.planGenerating
+                                  ? null
+                                  : (_) {
+                                      _showStudyPlanUpdatedSnackbar(context);
+                                    },
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '15 min',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '4 hrs',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Preferred Study Time',
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTimeSlotCard(
+                              context,
+                              label: 'Morning (8 AM - 12 PM)',
+                              value: 'Morning',
+                              selectedValue: state.preferredTime,
+                              isDark: isDark,
+                              isEnabled:
+                                  state.status != SubjectsStatus.planGenerating,
+                              onSelected: () {
+                                if (state.preferredTime == 'Morning') return;
+                                context.read<SubjectsBloc>().add(
+                                      UpdatePreferredTimeEvent('Morning'),
+                                    );
+                                _showStudyPlanUpdatedSnackbar(context);
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _buildTimeSlotCard(
+                              context,
+                              label: 'Afternoon (1 PM - 5 PM)',
+                              value: 'Afternoon',
+                              selectedValue: state.preferredTime,
+                              isDark: isDark,
+                              isEnabled:
+                                  state.status != SubjectsStatus.planGenerating,
+                              onSelected: () {
+                                if (state.preferredTime == 'Afternoon') return;
+                                context.read<SubjectsBloc>().add(
+                                      UpdatePreferredTimeEvent('Afternoon'),
+                                    );
+                                _showStudyPlanUpdatedSnackbar(context);
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _buildTimeSlotCard(
+                              context,
+                              label: 'Evening (6 PM - 10 PM)',
+                              value: 'Evening',
+                              selectedValue: state.preferredTime,
+                              isDark: isDark,
+                              isEnabled:
+                                  state.status != SubjectsStatus.planGenerating,
+                              onSelected: () {
+                                if (state.preferredTime == 'Evening') return;
+                                context.read<SubjectsBloc>().add(
+                                      UpdatePreferredTimeEvent('Evening'),
+                                    );
+                                _showStudyPlanUpdatedSnackbar(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
                       // STUDY PREFERENCES
                       Text(
                         'STUDY PREFERENCES',
@@ -489,6 +659,19 @@ class SettingsPage extends StatelessWidget {
                                     );
                               },
                               isDark: isDark,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 2),
+                              child: Text(
+                                'Task sessions use each agenda item\'s duration. '
+                                'This applies only when no tasks are scheduled.',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 12.0),
@@ -546,6 +729,23 @@ class SettingsPage extends StatelessWidget {
                             horizontal: 16, vertical: 12),
                         child: Column(
                           children: [
+                            _buildSwitchRow(
+                              context,
+                              label: 'Notification Reminders',
+                              value: state.notificationsEnabled,
+                              onChanged: (val) {
+                                context.read<SubjectsBloc>().add(
+                                      ToggleNotificationsEvent(val),
+                                    );
+                              },
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: Divider(
+                                color: Colors.transparent,
+                                height: 1,
+                              ),
+                            ),
                             _buildSwitchRow(
                               context,
                               label: 'Daily Reminder',
@@ -634,6 +834,7 @@ class SettingsPage extends StatelessWidget {
                                   ),
                                 ),
                               ),
+
                             ],
                           ),
                         ),
@@ -781,6 +982,86 @@ class SettingsPage extends StatelessWidget {
             onChanged: onChanged,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimeSlotCard(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required String selectedValue,
+    required bool isDark,
+    required bool isEnabled,
+    required VoidCallback onSelected,
+  }) {
+    final isSelected = selectedValue == value;
+
+    return GestureDetector(
+      onTap: isEnabled ? onSelected : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : AppColors.primary.withValues(alpha: 0.08))
+              : (isDark ? AppColors.darkBgStart : AppColors.lightBgStart),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightTextSecondary
+                              .withValues(alpha: 0.5)),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: isSelected
+                      ? (isDark ? Colors.white : AppColors.primaryDark)
+                      : (isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -125,7 +125,12 @@ class SkipSessionEvent extends TimerEvent {
 
 class StartBreakEvent extends TimerEvent {
   final bool isLongBreak;
-  StartBreakEvent({this.isLongBreak = false});
+  final int durationSeconds;
+
+  StartBreakEvent({
+    this.isLongBreak = false,
+    required this.durationSeconds,
+  });
 }
 
 class SkipBreakEvent extends TimerEvent {
@@ -446,7 +451,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> with WidgetsBindingObserver
     _tickerSubscription?.cancel();
     await _timerDataSource.clearState();
 
-    final breakDuration = event.isLongBreak ? 15 * 60 : 5 * 60;
+    final breakDuration = event.durationSeconds;
     _targetEndTime = DateTime.now().add(Duration(seconds: breakDuration));
     emit(state.copyWith(
       remainingSeconds: breakDuration,

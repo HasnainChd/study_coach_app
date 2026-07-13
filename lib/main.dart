@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_snackbar.dart';
 import 'features/analytics/data/datasources/study_history_local_data_source.dart';
 import 'features/analytics/data/repositories/study_history_repository_impl.dart';
 import 'features/analytics/domain/repositories/study_history_repository.dart';
@@ -143,36 +144,54 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
             home: Scaffold(
-              body: BlocListener<NavigationBloc, NavigationState>(
-                listener: (context, navState) {
-                  if (navState.currentScreen == AppScreen.focusTimer) {
-                    context.read<TimerBloc>().add(SyncTimerEvent());
-                  }
+              body: BlocListener<SubjectsBloc, SubjectsState>(
+                listenWhen: (previous, current) =>
+                    !previous.showNotificationPermissionWarning &&
+                    current.showNotificationPermissionWarning,
+                listener: (context, state) {
+                  AppSnackbar.show(
+                    context,
+                    type: SnackbarType.warning,
+                    title: 'Notifications disabled',
+                    message:
+                        'Notifications are disabled in system settings. '
+                        'Enable them to receive reminders.',
+                  );
+                  context.read<SubjectsBloc>().add(
+                        ClearNotificationPermissionWarningEvent(),
+                      );
                 },
-                child: BlocBuilder<NavigationBloc, NavigationState>(
-                  builder: (context, navState) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 350),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                        final slideAnimation = Tween<Offset>(
-                          begin: const Offset(0.05, 0.0),
-                          end: Offset.zero,
-                        ).animate(animation);
-
-                        return SlideTransition(
-                          position: slideAnimation,
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _buildScreen(navState.currentScreen),
-                    );
+                child: BlocListener<NavigationBloc, NavigationState>(
+                  listener: (context, navState) {
+                    if (navState.currentScreen == AppScreen.focusTimer) {
+                      context.read<TimerBloc>().add(SyncTimerEvent());
+                    }
                   },
+                  child: BlocBuilder<NavigationBloc, NavigationState>(
+                    builder: (context, navState) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                          final slideAnimation = Tween<Offset>(
+                            begin: const Offset(0.05, 0.0),
+                            end: Offset.zero,
+                          ).animate(animation);
+
+                          return SlideTransition(
+                            position: slideAnimation,
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildScreen(navState.currentScreen),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

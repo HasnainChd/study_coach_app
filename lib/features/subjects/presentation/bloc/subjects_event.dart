@@ -36,6 +36,8 @@ class ToggleNotificationsEvent extends SubjectsEvent {
   ToggleNotificationsEvent(this.enabled);
 }
 
+class ClearNotificationPermissionWarningEvent extends SubjectsEvent {}
+
 class ToggleAgendaItemEvent extends SubjectsEvent {
   final String id;
   ToggleAgendaItemEvent(this.id);

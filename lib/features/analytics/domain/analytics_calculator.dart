@@ -133,12 +133,14 @@ class AnalyticsCalculator {
     final rows = minutesBySubject.entries.map((entry) {
       final subject = _matchSubject(subjects, entry.key);
       final snapshotName = snapshotNamesBySubject[entry.key];
-      final name = snapshotName?.isNotEmpty == true
+      final baseName = snapshotName?.isNotEmpty == true
           ? snapshotName!
           : (subject?.name ?? _displayNameFromKey(entry.key));
+      final displayName =
+          subject == null ? '$baseName (Deleted)' : baseName;
       final color = subject?.color ?? Colors.grey;
       return SubjectBreakdownRow(
-        subjectName: name,
+        subjectName: displayName,
         totalMinutes: entry.value,
         share: entry.value / totalMinutes,
         color: color,

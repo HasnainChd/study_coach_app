@@ -459,6 +459,9 @@ class SessionCompleteModal extends StatelessWidget {
     final agendaItems = subjectsBloc.state.agendaItems;
     final nextItem = agendaNextItemAtIndex(agendaItems, state.taskId);
     final isLongBreak = isLongBreakForAgendaSession(sessionNumber);
+    final settings = subjectsBloc.state.settings;
+    final breakMinutes =
+        isLongBreak ? settings.longBreak : settings.shortBreak;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -544,8 +547,8 @@ class SessionCompleteModal extends StatelessWidget {
             isBreakComplete
                 ? 'Ready for your next study session?'
                 : (isLongBreak
-                    ? 'Long Break — 15 minutes'
-                    : 'Short Break — 5 minutes'),
+                    ? 'Long Break — $breakMinutes minutes'
+                    : 'Short Break — $breakMinutes minutes'),
             style: AppTextStyles.bodySmall.copyWith(
               color: isDark
                   ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
@@ -657,7 +660,10 @@ class SessionCompleteModal extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 context.read<TimerBloc>().add(
-                      StartBreakEvent(isLongBreak: isLongBreak),
+                      StartBreakEvent(
+                        isLongBreak: isLongBreak,
+                        durationSeconds: breakMinutes * 60,
+                      ),
                     );
               },
               child: Container(

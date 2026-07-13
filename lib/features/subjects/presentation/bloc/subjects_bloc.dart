@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../analytics/domain/entities/study_history_entry.dart';
 import '../../../analytics/domain/repositories/study_history_repository.dart';
@@ -56,6 +57,9 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     on<UpdateDailyMinutesEvent>(_onUpdateDailyMinutes);
     on<UpdatePreferredTimeEvent>(_onUpdatePreferredTime);
     on<ToggleNotificationsEvent>(_onToggleNotifications);
+    on<ClearNotificationPermissionWarningEvent>(
+      _onClearNotificationPermissionWarning,
+    );
     on<ToggleAgendaItemEvent>(_onToggleAgendaItem);
     on<UpdateSettingsPreferencesEvent>(_onUpdateSettingsPreferences);
     on<GenerateStudyPlanEvent>(_onGenerateStudyPlan);
@@ -161,6 +165,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         streakResetTriggered: showResetSnackbar,
         errorMessage: null,
       ));
+      await _syncScheduledNotifications();
     } catch (e) {
       emit(state.copyWith(
         status: SubjectsStatus.failure,
@@ -265,6 +270,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     try {
       await repository.savePreferredTime(event.preferredTime);
       emit(state.copyWith(preferredTime: event.preferredTime));
+      await _syncScheduledNotifications();
     } catch (_) {}
   }
 
@@ -273,9 +279,96 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) async {
     try {
-      await repository.saveNotificationsEnabled(event.enabled);
-      emit(state.copyWith(notificationsEnabled: event.enabled));
-    } catch (_) {}
+      if (event.enabled) {
+        debugPrint(
+          '[SubjectsBloc] Master notifications toggle ON — checking permission',
+        );
+        final granted =
+            await NotificationService().requestPermissionsIfNeeded();
+        if (!granted) {
+          debugPrint(
+            '[SubjectsBloc] Master notifications permission denied — '
+            'keeping toggle OFF',
+          );
+          emit(state.copyWith(showNotificationPermissionWarning: true));
+          return;
+        }
+        await repository.saveNotificationsEnabled(true);
+        emit(state.copyWith(notificationsEnabled: true));
+        await _syncScheduledNotifications();
+        return;
+      }
+
+      await repository.saveNotificationsEnabled(false);
+      emit(state.copyWith(notificationsEnabled: false));
+      await NotificationService().cancelAllNotifications();
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[SubjectsBloc] _onToggleNotifications failed: $e\n$stackTrace',
+      );
+    }
+  }
+
+  void _onClearNotificationPermissionWarning(
+    ClearNotificationPermissionWarningEvent event,
+    Emitter<SubjectsState> emit,
+  ) {
+    emit(state.copyWith(showNotificationPermissionWarning: false));
+  }
+
+  int _incompleteTaskCount() {
+    return state.agendaItems.where((item) => !item.isCompleted).length;
+  }
+
+  bool _streakClaimedToday() {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    return state.lastStreakClaimedDate == today;
+  }
+
+  Future<void> _syncScheduledNotifications() async {
+    final notificationService = NotificationService();
+
+    if (!state.notificationsEnabled) {
+      await notificationService.cancelAllNotifications();
+      return;
+    }
+
+    if (!await notificationService.hasPermission()) {
+      return;
+    }
+
+    final prefs = state.settings;
+
+    if (prefs.dailyReminder) {
+      await notificationService.scheduleDailyReminder(
+        preferredTime: state.preferredTime,
+        incompleteTaskCount: _incompleteTaskCount(),
+      );
+    } else {
+      await notificationService.cancelNotification(
+        NotificationIds.dailyReminder,
+      );
+    }
+
+    if (prefs.streakAlerts && !_streakClaimedToday()) {
+      await notificationService.scheduleStreakAlert();
+    } else {
+      await notificationService.cancelNotification(NotificationIds.streakAlert);
+    }
+
+    if (prefs.studyTips) {
+      await notificationService.scheduleStudyTip();
+    } else {
+      await notificationService.cancelNotification(NotificationIds.studyTip);
+    }
+  }
+
+  Future<bool> _schedulePostPlanReminder(Emitter<SubjectsState> emit) async {
+    final scheduled = await NotificationService().scheduleStudyReminder(15);
+    if (!scheduled) {
+      emit(state.copyWith(showNotificationPermissionWarning: true));
+    }
+    return scheduled;
   }
 
   Future<void> _onToggleAgendaItem(
@@ -377,6 +470,10 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         lastStreakClaimedDate: lastClaimed,
       ));
 
+      if (shouldAwardXp && lastClaimed == DateTime.now().toIso8601String().substring(0, 10)) {
+        await NotificationService().cancelNotification(NotificationIds.streakAlert);
+      }
+
     } catch (_) {}
   }
 
@@ -399,6 +496,41 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) async {
     try {
+      final enablingDaily =
+          event.dailyReminder == true && !state.settings.dailyReminder;
+      final enablingStreak =
+          event.streakAlerts == true && !state.settings.streakAlerts;
+      final enablingTips =
+          event.studyTips == true && !state.settings.studyTips;
+
+      if (enablingDaily || enablingStreak || enablingTips) {
+        debugPrint(
+          '[SubjectsBloc] Sub-toggle enable — checking notification permission '
+          '(master=${state.notificationsEnabled})',
+        );
+        final granted =
+            await NotificationService().requestPermissionsIfNeeded();
+        if (!granted) {
+          debugPrint(
+            '[SubjectsBloc] Sub-toggle permission denied — reverting toggle',
+          );
+          final revertedPrefs = state.settings.copyWith(
+            dailyReminder: enablingDaily ? false : event.dailyReminder,
+            streakAlerts: enablingStreak ? false : event.streakAlerts,
+            studyTips: enablingTips ? false : event.studyTips,
+            pomodoroFocus: event.pomodoroFocus,
+            shortBreak: event.shortBreak,
+            longBreak: event.longBreak,
+          );
+          await repository.saveSettingsPreferences(revertedPrefs);
+          emit(state.copyWith(
+            settings: revertedPrefs,
+            showNotificationPermissionWarning: true,
+          ));
+          return;
+        }
+      }
+
       final updatedPrefs = state.settings.copyWith(
         pomodoroFocus: event.pomodoroFocus,
         shortBreak: event.shortBreak,
@@ -409,7 +541,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       );
       await repository.saveSettingsPreferences(updatedPrefs);
       emit(state.copyWith(settings: updatedPrefs));
-    } catch (_) {}
+      await _syncScheduledNotifications();
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[SubjectsBloc] _onUpdateSettingsPreferences failed: $e\n$stackTrace',
+      );
+    }
   }
 
   Future<void> _onGenerateStudyPlan(
@@ -434,8 +571,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       // Trigger local study reminder notification (in 15 minutes) if enabled
       if (state.notificationsEnabled) {
         try {
-          await NotificationService().scheduleStudyReminder(15);
-        } catch (_) {}
+          await _schedulePostPlanReminder(emit);
+        } catch (e, stackTrace) {
+          debugPrint(
+            '[SubjectsBloc] Post-plan reminder scheduling failed: $e\n$stackTrace',
+          );
+        }
       }
 
       emit(state.copyWith(
@@ -475,8 +616,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       // Trigger local study reminder notification (in 15 minutes) if enabled
       if (state.notificationsEnabled) {
         try {
-          await NotificationService().scheduleStudyReminder(15);
-        } catch (_) {}
+          await _schedulePostPlanReminder(emit);
+        } catch (e, stackTrace) {
+          debugPrint(
+            '[SubjectsBloc] Post-plan reminder scheduling failed: $e\n$stackTrace',
+          );
+        }
       }
 
       emit(state.copyWith(
