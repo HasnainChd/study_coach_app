@@ -318,7 +318,7 @@ class SettingsPage extends StatelessWidget {
                 context,
                 type: SnackbarType.success,
                 title: "Study plan regenerated! 🚀",
-                message: "Your fresh study tasks are ready on Home.",
+                message: "Your new study plan is ready!",
               );
             } else if (state.status == SubjectsStatus.failure) {
               AppSnackbar.show(

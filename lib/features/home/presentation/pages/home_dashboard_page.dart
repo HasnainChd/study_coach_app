@@ -339,7 +339,7 @@ class HomeDashboardPage extends StatelessWidget {
               context,
               type: SnackbarType.success,
               title: "Plan Ready!",
-              message: "Your study schedule has been generated.",
+              message: "Your new study plan is ready!",
             );
           }
 

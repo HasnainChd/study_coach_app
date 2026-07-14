@@ -363,13 +363,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     }
   }
 
-  Future<bool> _schedulePostPlanReminder(Emitter<SubjectsState> emit) async {
-    final scheduled = await NotificationService().scheduleStudyReminder(15);
-    if (!scheduled) {
-      emit(state.copyWith(showNotificationPermissionWarning: true));
-    }
-    return scheduled;
-  }
 
   Future<void> _onToggleAgendaItem(
     ToggleAgendaItemEvent event,
@@ -568,16 +561,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       // Persist that onboarding is completed
       await repository.saveHasCompletedOnboarding(true);
 
-      // Trigger local study reminder notification (in 15 minutes) if enabled
-      if (state.notificationsEnabled) {
-        try {
-          await _schedulePostPlanReminder(emit);
-        } catch (e, stackTrace) {
-          debugPrint(
-            '[SubjectsBloc] Post-plan reminder scheduling failed: $e\n$stackTrace',
-          );
-        }
-      }
 
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,
@@ -613,16 +596,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       );
       await repository.saveAgendaItems(result.agendaItems);
 
-      // Trigger local study reminder notification (in 15 minutes) if enabled
-      if (state.notificationsEnabled) {
-        try {
-          await _schedulePostPlanReminder(emit);
-        } catch (e, stackTrace) {
-          debugPrint(
-            '[SubjectsBloc] Post-plan reminder scheduling failed: $e\n$stackTrace',
-          );
-        }
-      }
 
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,

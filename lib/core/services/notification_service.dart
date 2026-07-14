@@ -8,13 +8,12 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationIds {
-  static const int postPlanReminder = 0;
   static const int dailyReminder = 1;
   static const int streakAlert = 2;
   static const int studyTip = 3;
 
   static const dailyTypes = [dailyReminder, streakAlert, studyTip];
-  static const all = [postPlanReminder, ...dailyTypes];
+  static const all = dailyTypes;
 }
 
 class StudyTips {
@@ -424,35 +423,6 @@ class NotificationService {
     );
   }
 
-  Future<bool> scheduleStudyReminder(int minutesFromNow) async {
-    if (!await requestPermissionsIfNeeded()) {
-      return false;
-    }
-
-    final scheduledTime =
-        tz.TZDateTime.now(tz.local).add(Duration(minutes: minutesFromNow));
-
-    final currentHour = DateTime.now().hour;
-    final String greeting;
-    if (currentHour < 12) {
-      greeting = 'Good morning!';
-    } else if (currentHour <= 16) {
-      greeting = 'Good afternoon!';
-    } else {
-      greeting = 'Good evening!';
-    }
-
-    final body = '$greeting Time to study! Your session for today is ready.';
-    await _safeZonedSchedule(
-      NotificationIds.postPlanReminder,
-      'Study Time Reminder',
-      body,
-      scheduledTime,
-      _buildNotificationDetails(body),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
-    return true;
-  }
 
   Future<void> scheduleDailyReminder({
     required String preferredTime,
