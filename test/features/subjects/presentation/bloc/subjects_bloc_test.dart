@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:study_coach_app/features/analytics/domain/entities/study_history_entry.dart';
+import 'package:study_coach_app/features/analytics/domain/repositories/study_history_repository.dart';
 import 'package:study_coach_app/features/subjects/domain/entities/subject.dart';
 import 'package:study_coach_app/features/subjects/domain/entities/agenda_item.dart';
 import 'package:study_coach_app/features/subjects/domain/entities/settings_preferences.dart';
@@ -7,10 +9,28 @@ import 'package:study_coach_app/features/subjects/domain/repositories/subject_re
 import 'package:study_coach_app/features/subjects/domain/usecases/add_subject_usecase.dart';
 import 'package:study_coach_app/features/subjects/domain/usecases/get_subjects_usecase.dart';
 import 'package:study_coach_app/features/subjects/domain/usecases/remove_subject_usecase.dart';
+import 'package:study_coach_app/features/subjects/domain/entities/study_plan_result.dart';
 import 'package:study_coach_app/features/subjects/domain/usecases/generate_study_plan_usecase.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_bloc.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_event.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_state.dart';
+
+class MockStudyHistoryRepository implements StudyHistoryRepository {
+  List<StudyHistoryEntry> entries = [];
+
+  @override
+  Future<void> addEntry(StudyHistoryEntry entry) async {
+    entries = [...entries, entry];
+  }
+
+  @override
+  Future<List<StudyHistoryEntry>> getEntries() async => entries;
+
+  @override
+  Future<void> removeByAgendaItemId(String agendaItemId) async {
+    entries = entries.where((entry) => entry.agendaItemId != agendaItemId).toList();
+  }
+}
 
 class MockSubjectRepository implements SubjectRepository {
   List<Subject> subjects = [];
@@ -123,19 +143,21 @@ class MockGenerateStudyPlanUseCase implements GenerateStudyPlanUseCase {
   MockGenerateStudyPlanUseCase(this.repository);
 
   @override
-  Future<List<AgendaItem>> call({
+  Future<StudyPlanResult> call({
     required int dailyMinutes,
     required String preferredTime,
   }) async {
-    return [
-      AgendaItem(
-        id: 'mock_1',
-        title: 'Mock study topic',
-        tag: 'History',
-        durationMinutes: 45,
-        tagColor: Colors.red,
-      )
-    ];
+    return StudyPlanResult(
+      agendaItems: [
+        AgendaItem(
+          id: 'mock_1',
+          title: 'Mock study topic',
+          tag: 'History',
+          durationMinutes: 45,
+          tagColor: Colors.red,
+        ),
+      ],
+    );
   }
 }
 
@@ -145,10 +167,12 @@ void main() {
   late AddSubjectUseCase addSubjectUseCase;
   late RemoveSubjectUseCase removeSubjectUseCase;
   late MockGenerateStudyPlanUseCase generateStudyPlanUseCase;
+  late MockStudyHistoryRepository studyHistoryRepository;
   late SubjectsBloc bloc;
 
   setUp(() {
     repository = MockSubjectRepository();
+    studyHistoryRepository = MockStudyHistoryRepository();
     getSubjectsUseCase = GetSubjectsUseCase(repository);
     addSubjectUseCase = AddSubjectUseCase(repository);
     removeSubjectUseCase = RemoveSubjectUseCase(repository);
@@ -159,6 +183,7 @@ void main() {
       addSubjectUseCase: addSubjectUseCase,
       removeSubjectUseCase: removeSubjectUseCase,
       generateStudyPlanUseCase: generateStudyPlanUseCase,
+      studyHistoryRepository: studyHistoryRepository,
     );
   });
 
@@ -300,6 +325,9 @@ void main() {
       isCompleted: false,
     );
     bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_math', name: 'Math', color: Colors.purple, progress: 0.0),
+      ],
       agendaItems: [item1, item2],
       xpProgress: 0.20,
       streak: 12,
@@ -314,8 +342,285 @@ void main() {
         predicate<SubjectsState>((state) =>
             state.agendaItems.first.isCompleted &&
             (state.xpProgress - 0.70).abs() < 0.001 && // 0.20 + 0.50 = 0.70
+            state.subjects.first.progress == 0.50 &&
             state.streak == 13),
       ),
+    );
+  });
+
+  test('ToggleAgendaItemEvent deducts XP and resets hasEarnedXp on uncheck', () async {
+    final item1 = AgendaItem(
+      id: 'task_1',
+      title: 'Calculus',
+      tag: 'Math',
+      durationMinutes: 30,
+      tagColor: Colors.purple,
+      isCompleted: true,
+      hasEarnedXp: true,
+    );
+    final item2 = AgendaItem(
+      id: 'task_2',
+      title: 'Algebra',
+      tag: 'Math',
+      durationMinutes: 30,
+      tagColor: Colors.purple,
+      isCompleted: false,
+    );
+    bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_math', name: 'Math', color: Colors.purple, progress: 0.0),
+      ],
+      agendaItems: [item1, item2],
+      xpProgress: 0.66,
+      level: 7,
+      streak: 12,
+      lastStreakClaimedDate: DateTime.now().toIso8601String().substring(0, 10),
+    ));
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+
+    await expectLater(
+      bloc.stream,
+      emits(
+        predicate<SubjectsState>((state) {
+          final task = state.agendaItems.first;
+          return !task.isCompleted &&
+              !task.hasEarnedXp &&
+              (state.xpProgress - 0.16).abs() < 0.001 && // 0.66 - 0.50
+              state.level == 7 &&
+              state.streak == 12;
+        }),
+      ),
+    );
+  });
+
+  test('ToggleAgendaItemEvent re-awards XP after re-check', () async {
+    final items = List.generate(
+      3,
+      (i) => AgendaItem(
+        id: 'task_${i + 1}',
+        title: 'Task ${i + 1}',
+        tag: 'Math',
+        durationMinutes: 30,
+        tagColor: Colors.purple,
+        isCompleted: false,
+      ),
+    );
+    const baselineXp = 0.33;
+    bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_math', name: 'Math', color: Colors.purple, progress: 0.0),
+      ],
+      agendaItems: items,
+      xpProgress: baselineXp,
+      level: 7,
+    ));
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+    await bloc.stream.firstWhere((s) => s.agendaItems.first.isCompleted);
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+    await bloc.stream.firstWhere((s) => !s.agendaItems.first.isCompleted);
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+    await expectLater(
+      bloc.stream,
+      emits(
+        predicate<SubjectsState>((state) {
+          final task = state.agendaItems.first;
+          final expectedXp = baselineXp + (1.0 / 3);
+          return task.isCompleted &&
+              task.hasEarnedXp &&
+              (state.xpProgress - expectedXp).abs() < 0.001;
+        }),
+      ),
+    );
+  });
+
+  test('ToggleAgendaItemEvent rapid toggles do not drift XP from baseline', () async {
+    final items = List.generate(
+      3,
+      (i) => AgendaItem(
+        id: 'task_${i + 1}',
+        title: 'Task ${i + 1}',
+        tag: 'Math',
+        durationMinutes: 30,
+        tagColor: Colors.purple,
+      ),
+    );
+    const baselineXp = 0.33;
+    bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_math', name: 'Math', color: Colors.purple, progress: 0.0),
+      ],
+      agendaItems: items,
+      xpProgress: baselineXp,
+      level: 7,
+    ));
+
+    for (var i = 0; i < 6; i++) {
+      bloc.add(ToggleAgendaItemEvent('task_1'));
+      await bloc.stream.firstWhere(
+        (s) => i.isEven
+            ? s.agendaItems.first.isCompleted
+            : !s.agendaItems.first.isCompleted,
+      );
+    }
+
+    expect((bloc.state.xpProgress - baselineXp).abs() < 0.001, isTrue);
+    expect(bloc.state.agendaItems.first.isCompleted, isFalse);
+    expect(bloc.state.agendaItems.first.hasEarnedXp, isFalse);
+  });
+
+  test('ToggleAgendaItemEvent logs and removes study history entries', () async {
+    final item = AgendaItem(
+      id: 'task_1',
+      title: 'Urdu',
+      tag: 'Urdu',
+      durationMinutes: 45,
+      tagColor: Colors.green,
+    );
+    bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_urdu', name: 'Urdu', color: Colors.green, progress: 0.0),
+      ],
+      agendaItems: [item],
+      xpProgress: 0.0,
+    ));
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+    await bloc.stream.firstWhere((s) => s.agendaItems.first.isCompleted);
+
+    expect(studyHistoryRepository.entries.length, 1);
+    expect(studyHistoryRepository.entries.first.agendaItemId, 'task_1');
+    expect(studyHistoryRepository.entries.first.subjectId, 's_urdu');
+    expect(studyHistoryRepository.entries.first.durationMinutes, 45);
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+    await bloc.stream.firstWhere((s) => !s.agendaItems.first.isCompleted);
+
+    expect(studyHistoryRepository.entries, isEmpty);
+  });
+
+  test('ToggleAgendaItemEvent uncheck does not reverse auto-claimed streak', () async {
+    final item = AgendaItem(
+      id: 'task_1',
+      title: 'Calculus',
+      tag: 'Math',
+      durationMinutes: 30,
+      tagColor: Colors.purple,
+      isCompleted: true,
+      hasEarnedXp: true,
+    );
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    bloc.emit(bloc.state.copyWith(
+      subjects: [
+        Subject(id: 's_math', name: 'Math', color: Colors.purple, progress: 0.0),
+      ],
+      agendaItems: [item],
+      xpProgress: 0.50,
+      streak: 5,
+      lastStreakClaimedDate: today,
+    ));
+
+    bloc.add(ToggleAgendaItemEvent('task_1'));
+
+    await expectLater(
+      bloc.stream,
+      emits(
+        predicate<SubjectsState>((state) =>
+            !state.agendaItems.first.isCompleted &&
+            state.streak == 5 &&
+            state.lastStreakClaimedDate == today),
+      ),
+    );
+  });
+
+  test('RemoveSubjectEvent and UndoRemoveSubjectEvent successfully delete and restore subject and tasks', () async {
+    final sub = Subject(id: 's_history', name: 'History', color: Colors.blue, progress: 0.0);
+    final item = AgendaItem(
+      id: 'task_history',
+      title: 'World War 1',
+      tag: 'History',
+      durationMinutes: 30,
+      tagColor: Colors.blue,
+      isCompleted: false,
+    );
+
+    repository.subjects = [sub];
+    repository.agendaItems = [item];
+
+    bloc.emit(bloc.state.copyWith(
+      subjects: [sub],
+      agendaItems: [item],
+    ));
+
+    bloc.add(RemoveSubjectEvent('s_history'));
+
+    await expectLater(
+      bloc.stream,
+      emitsInOrder([
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.loading),
+        predicate<SubjectsState>((state) =>
+            state.status == SubjectsStatus.success &&
+            state.subjects.isEmpty &&
+            state.agendaItems.isEmpty),
+      ]),
+    );
+
+    bloc.add(UndoRemoveSubjectEvent());
+
+    await expectLater(
+      bloc.stream,
+      emitsInOrder([
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.loading),
+        predicate<SubjectsState>((state) =>
+            state.status == SubjectsStatus.success &&
+            state.subjects.length == 1 &&
+            state.subjects.first.id == 's_history' &&
+            state.agendaItems.length == 1 &&
+            state.agendaItems.first.id == 'task_history'),
+      ]),
+    );
+  });
+
+  test('UpdateSubjectEvent updates subject details and cascadingly updates agenda tags and colors', () async {
+    final sub = Subject(id: 's_history', name: 'History', color: Colors.blue, progress: 0.0);
+    final item = AgendaItem(
+      id: 'task_history',
+      title: 'World War 1',
+      tag: 'History',
+      durationMinutes: 30,
+      tagColor: Colors.blue,
+      isCompleted: false,
+    );
+
+    repository.subjects = [sub];
+    repository.agendaItems = [item];
+
+    bloc.emit(bloc.state.copyWith(
+      subjects: [sub],
+      agendaItems: [item],
+    ));
+
+    bloc.add(UpdateSubjectEvent(
+      id: 's_history',
+      name: 'World History',
+      color: Colors.red,
+      examDate: DateTime(2027, 10, 10),
+    ));
+
+    await expectLater(
+      bloc.stream,
+      emitsInOrder([
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.loading),
+        predicate<SubjectsState>((state) =>
+            state.status == SubjectsStatus.success &&
+            state.subjects.first.name == 'World History' &&
+            state.subjects.first.color == Colors.red &&
+            state.agendaItems.first.tag == 'World History' &&
+            state.agendaItems.first.tagColor == Colors.red),
+      ]),
     );
   });
 }
