@@ -6,6 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_background.dart';
+import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/services/usage_limit_service.dart';
 import '../../../bloc/chat_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 
@@ -73,41 +76,77 @@ class _CoachChatPageState extends State<CoachChatPage> {
       context: context,
       builder: (ctx) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor:
-              isDark ? AppColors.darkOverlayBg : Colors.white,
-          title: Text(
-            'Reset Conversation?',
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.lightTextPrimary,
-              fontWeight: FontWeight.bold,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: GlassCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reset Conversation?',
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'This will clear all past chat history with your AI Study Coach. This action cannot be undone.',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        context.read<ChatBloc>().add(ClearChatEvent());
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.redAccent.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          content: Text(
-            'This will clear all past chat history with your AI Study Coach. '
-            'This action cannot be undone.',
-            style: TextStyle(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                context.read<ChatBloc>().add(ClearChatEvent());
-              },
-              child: const Text(
-                'Clear',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -144,14 +183,20 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                 fontSize: 18,
                               ),
                             ),
-                            if (chatState.isTyping)
-                              Text(
-                                'typing...',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.primary,
-                                  fontSize: 11,
-                                ),
+                            const SizedBox(height: 2),
+                            Text(
+                              chatState.isTyping
+                                  ? 'typing...'
+                                  : '${chatState.remainingMessages}/${UsageType.coachMessage.limit} messages today',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: chatState.isTyping
+                                    ? AppColors.primary
+                                    : (isDark
+                                        ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
+                                        : AppColors.lightTextSecondary.withValues(alpha: 0.7)),
+                                fontSize: 11,
                               ),
+                            ),
                           ],
                         );
                       },
@@ -196,6 +241,14 @@ class _CoachChatPageState extends State<CoachChatPage> {
               child: BlocConsumer<ChatBloc, ChatState>(
                 listener: (context, chatState) {
                   _scrollToBottom();
+                  if (chatState.limitReached) {
+                    AppSnackbar.show(
+                      context,
+                      type: SnackbarType.info,
+                      title: "Daily limit reached",
+                      message: "You've reached today's message limit. Let's continue tomorrow! 👋",
+                    );
+                  }
                 },
                 builder: (context, chatState) {
                   // Build display list: real messages + optional typing sentinel.

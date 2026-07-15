@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/usage_limit_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -644,6 +645,25 @@ class HomeDashboardPage extends StatelessWidget {
                         );
                       }
                       final items = state.agendaItems;
+                      if (items.isEmpty) {
+                        return FutureBuilder<bool>(
+                          future: context.read<SubjectsBloc>().usageLimitService.canPerformAction(UsageType.planRegenerate),
+                          builder: (context, snapshot) {
+                            final limitReached = snapshot.hasData && !snapshot.data!;
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                child: GlassCard(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        limitReached
+                                            ? Icons.lock_clock_rounded
+                                            : Icons.calendar_today_rounded,
+                                        color: isDark ? Colors.white30 : Colors.black26,
+                                        size: 56,
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
@@ -654,6 +674,45 @@ class HomeDashboardPage extends StatelessWidget {
                                           color: isDark ? Colors.white : AppColors.lightTextPrimary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        limitReached
+                                            ? 'Daily plan limit reached — try again tomorrow.'
+                                            : 'No plan generated yet — go to Settings to create one.',
+                                        textAlign: TextAlign.center,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      if (!limitReached) ...[
+                                        const SizedBox(height: 20),
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            context.read<NavigationBloc>().add(SwitchDashboardTabEvent(4));
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          icon: const Icon(Icons.settings_rounded, size: 18),
+                                          label: const Text('Go to Settings'),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
                       return ListView.separated(
                         padding: EdgeInsets.zero,
                         itemCount: items.length,
@@ -888,63 +947,110 @@ class HomeDashboardPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(
-                              Icons.check_circle_rounded,
-                              color: AppColors.subjectGreen,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'All done for today! Great work 🎉',
-                              style: AppTextStyles.bodyMedium.copyWith(
+                                Icons.check_circle_rounded,
                                 color: AppColors.subjectGreen,
-                                fontWeight: FontWeight.bold,
+                                size: 20,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                'All done for today! Great work 🎉',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.subjectGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      int focusMinutes = 25;
+                      if (uncompletedItems.isNotEmpty) {
+                        focusMinutes = uncompletedItems.first.durationMinutes;
+                      } else if (state.agendaItems.isNotEmpty) {
+                        focusMinutes = state.agendaItems.first.durationMinutes;
+                      } else {
+                        focusMinutes = state.settings.pomodoroFocus;
+                      }
+
+                      final activeItem = uncompletedItems.isNotEmpty
+                          ? uncompletedItems.first
+                          : (state.agendaItems.isNotEmpty
+                              ? state.agendaItems.first
+                              : null);
+
+                      final showDivider = state.agendaItems.isEmpty;
+
+                      final button = PrimaryButton(
+                        text: 'Quick Start Session ($focusMinutes min)',
+                        icon: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 24,
                         ),
+                        onPressed: () {
+                          context.read<TimerBloc>().add(
+                                StartTimerEvent(
+                                  taskId: activeItem?.id,
+                                  durationSeconds: focusMinutes * 60,
+                                  taskTitle: activeItem?.title,
+                                  subjectName: activeItem?.tag,
+                                  subjectColor: activeItem?.tagColor,
+                                ),
+                              );
+                          // Navigate to Focus Timer Page
+                          context.read<NavigationBloc>().add(
+                                NavigateToScreenEvent(AppScreen.focusTimer),
+                              );
+                        },
                       );
-                    }
 
-                    int focusMinutes = 25;
-                    if (uncompletedItems.isNotEmpty) {
-                      focusMinutes = uncompletedItems.first.durationMinutes;
-                    } else if (state.agendaItems.isNotEmpty) {
-                      focusMinutes = state.agendaItems.first.durationMinutes;
-                    } else {
-                      focusMinutes = state.settings.pomodoroFocus;
-                    }
+                      if (showDivider) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(
+                                    color: isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder,
+                                    thickness: 1.2,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text(
+                                    'Or start a quick session without a plan',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(
+                                    color: isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder,
+                                    thickness: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            button,
+                          ],
+                        );
+                      }
 
-                    final activeItem = uncompletedItems.isNotEmpty
-                        ? uncompletedItems.first
-                        : (state.agendaItems.isNotEmpty
-                            ? state.agendaItems.first
-                            : null);
-
-                    return PrimaryButton(
-                      text: 'Quick Start Session ($focusMinutes min)',
-                      icon: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        context.read<TimerBloc>().add(
-                              StartTimerEvent(
-                                taskId: activeItem?.id,
-                                durationSeconds: focusMinutes * 60,
-                                taskTitle: activeItem?.title,
-                                subjectName: activeItem?.tag,
-                                subjectColor: activeItem?.tagColor,
-                              ),
-                            );
-                        // Navigate to Focus Timer Page
-                        context.read<NavigationBloc>().add(
-                              NavigateToScreenEvent(AppScreen.focusTimer),
-                            );
-                      },
-                    );
-                  },
-                ),
+                      return button;
+                    },
+                  ),
                 const SizedBox(height: 10),
               ],
             ),

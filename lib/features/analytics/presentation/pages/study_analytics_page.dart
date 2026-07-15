@@ -78,92 +78,109 @@ class StudyAnalyticsPage extends StatelessWidget {
                             ),
                           ),
                           if (!state.hasWeeklyActivity) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              'Complete a few study sessions to see your activity here.',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                                fontSize: 13,
+                            const SizedBox(height: 24),
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.bar_chart_rounded,
+                                    size: 40,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Complete a few study sessions to see your activity here.',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                      fontSize: 13,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                          const SizedBox(height: 28),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: List.generate(state.dayLabels.length, (index) {
-                              final day = state.dayLabels[index];
-                              final heightFactor = state.dayHeightFactors[index];
-                              final isSelected = state.selectedDayIndex == index;
+                          ] else ...[
+                            const SizedBox(height: 28),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(state.dayLabels.length, (index) {
+                                final day = state.dayLabels[index];
+                                final heightFactor = state.dayHeightFactors[index];
+                                final isSelected = state.selectedDayIndex == index;
 
-                              return GestureDetector(
-                                onTap: () {
-                                  context.read<AnalyticsBloc>().add(
-                                        SelectAnalyticsDayEvent(index),
-                                      );
-                                },
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 28,
-                                      height: 110,
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? AppColors.darkBorder
-                                                .withValues(alpha: 0.4)
-                                            : AppColors.lightBorder
-                                                .withValues(alpha: 0.4),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: isSelected
-                                            ? Border.all(
-                                                color: isDark
-                                                    ? Colors.white
-                                                    : AppColors.primary,
-                                                width: 1.2,
-                                              )
-                                            : null,
-                                      ),
-                                      child: Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Container(
-                                          width: double.infinity,
-                                          height: 110 * heightFactor,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : AppColors.primary.withValues(
-                                                    alpha: isDark ? 0.35 : 0.45,
-                                                  ),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                return GestureDetector(
+                                  onTap: () {
+                                    context.read<AnalyticsBloc>().add(
+                                          SelectAnalyticsDayEvent(index),
+                                        );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 110,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AppColors.darkBorder
+                                                  .withValues(alpha: 0.4)
+                                              : AppColors.lightBorder
+                                                  .withValues(alpha: 0.4),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: isSelected
+                                              ? Border.all(
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : AppColors.primary,
+                                                  width: 1.2,
+                                                )
+                                              : null,
+                                        ),
+                                        child: Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: 110 * heightFactor,
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.primary.withValues(
+                                                      alpha: isDark ? 0.35 : 0.45,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      day,
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? (isDark
-                                                ? Colors.white
-                                                : AppColors.primaryDark)
-                                            : (isDark
-                                                ? AppColors.darkTextSecondary
-                                                : AppColors.lightTextSecondary),
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.w500,
-                                        fontSize: 12,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        day,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? (isDark
+                                                  ? Colors.white
+                                                  : AppColors.primaryDark)
+                                              : (isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors.lightTextSecondary),
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -179,13 +196,31 @@ class StudyAnalyticsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     if (!state.hasBreakdown)
-                      Text(
-                        'Complete a few study sessions to see your activity here.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
-                          fontSize: 13,
+                      GlassCard(
+                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.donut_large_rounded,
+                                size: 40,
+                                color: isDark
+                                    ? Colors.white38
+                                    : Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Complete a few study sessions to see your breakdown.',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                     else

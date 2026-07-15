@@ -276,7 +276,7 @@ class SubjectDetailPage extends StatelessWidget {
                         onTap: () async {
                           final picked = await showDatePicker(
                             context: stateContext,
-                            initialDate: selectedDate ?? DateTime.now().add(const Duration(days: 30)),
+                            initialDate: selectedDate ?? DateTime.now(),
                             firstDate: DateTime.now().subtract(const Duration(days: 365)),
                             lastDate: DateTime.now().add(const Duration(days: 365)),
                           );

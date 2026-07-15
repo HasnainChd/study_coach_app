@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/api_config.dart';
+import '../../core/services/usage_limit_service.dart';
 import '../chat/data/models/chat_message_model.dart';
 
 import '../chat/domain/repositories/chat_repository.dart';
@@ -74,10 +75,15 @@ class ChatState {
   /// Non-null when the last API call failed.
   final String? error;
 
+  final bool limitReached;
+  final int remainingMessages;
+
   const ChatState({
     required this.messages,
     this.isTyping = false,
     this.error,
+    this.limitReached = false,
+    this.remainingMessages = 18,
   });
 
   ChatState copyWith({
@@ -85,11 +91,15 @@ class ChatState {
     bool? isTyping,
     String? error,
     bool clearError = false,
+    bool? limitReached,
+    int? remainingMessages,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isTyping: isTyping ?? this.isTyping,
       error: clearError ? null : (error ?? this.error),
+      limitReached: limitReached ?? this.limitReached,
+      remainingMessages: remainingMessages ?? this.remainingMessages,
     );
   }
 }
@@ -118,6 +128,7 @@ class ClearChatEvent extends ChatEvent {}
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _chatRepository;
+  final UsageLimitService _usageLimitService;
 
   /// Snapshot of the SubjectsBloc state at construction time.
   /// The page updates this reference each time SubjectsBloc changes.
@@ -126,8 +137,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ChatBloc({
     required ChatRepository chatRepository,
     required SubjectsState initialSubjectsState,
+    required UsageLimitService usageLimitService,
   })  : _chatRepository = chatRepository,
         _subjectsState = initialSubjectsState,
+        _usageLimitService = usageLimitService,
         super(const ChatState(messages: [])) {
     on<LoadChatHistoryEvent>(_onLoadHistory);
     on<SendMessageEvent>(_onSendMessage);
@@ -148,10 +161,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     LoadChatHistoryEvent event,
     Emitter<ChatState> emit,
   ) async {
+    final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
     final models = await _chatRepository.getMessages();
     if (models.isNotEmpty) {
       final messages = models.map(ChatMessage.fromModel).toList();
-      emit(state.copyWith(messages: messages, clearError: true));
+      emit(state.copyWith(
+        messages: messages,
+        clearError: true,
+        remainingMessages: remaining,
+      ));
     } else {
       // First-ever open — emit a personalised welcome based on real data.
       final welcome = await _buildWelcomeMessage();
@@ -163,7 +181,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
       final initial = [welcomeMsg];
       await _persistMessages(initial);
-      emit(state.copyWith(messages: initial, clearError: true));
+      emit(state.copyWith(
+        messages: initial,
+        clearError: true,
+        remainingMessages: remaining,
+      ));
     }
   }
 
@@ -173,6 +195,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     final text = event.text.trim();
     if (text.isEmpty) return;
+
+    final canPerform = await _usageLimitService.canPerformAction(UsageType.coachMessage);
+    if (!canPerform) {
+      emit(state.copyWith(limitReached: true));
+      emit(state.copyWith(limitReached: false));
+      return;
+    }
 
     // 1. Append user message immediately.
     final userMsg = ChatMessage(
@@ -196,7 +225,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
       final withBot = List<ChatMessage>.from(withUser)..add(botMsg);
       await _persistMessages(withBot);
-      emit(state.copyWith(messages: withBot, isTyping: false));
+
+      await _usageLimitService.recordAction(UsageType.coachMessage);
+      final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
+
+      emit(state.copyWith(
+        messages: withBot,
+        isTyping: false,
+        remainingMessages: remaining,
+      ));
     } catch (e, st) {
       // Print real error to console for debugging.
       // ignore: avoid_print
@@ -212,10 +249,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
       final withErr = List<ChatMessage>.from(withUser)..add(errMsg);
       await _persistMessages(withErr);
+
+      final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
+
       emit(state.copyWith(
         messages: withErr,
         isTyping: false,
         error: e.toString(),
+        remainingMessages: remaining,
       ));
     }
   }
@@ -225,7 +266,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     await _chatRepository.clearMessages();
-    emit(const ChatState(messages: []));
+    final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
+    emit(ChatState(messages: const [], remainingMessages: remaining));
     // Immediately reload to show a fresh welcome.
     add(LoadChatHistoryEvent());
   }
@@ -316,7 +358,7 @@ Pomodoro Focus: ${s.settings.pomodoroFocus} min | Short Break: ${s.settings.shor
 
 === COACHING STYLE ===
 - Be warm, motivating, and concise (2–4 sentences unless asked for detail).
-- Refer to the student by name (${name.isEmpty ? 'buddy' : name}).
+- Use the student's name (${name.isEmpty ? 'buddy' : name}) sparingly and naturally (e.g., only in greetings or occasionally for warmth, not in every single response).
 - Ground advice in their actual subjects, exam dates, and today's agenda above.
 - ONLY mention their exam dates/countdown or streak when it is directly relevant to their query or when they explicitly ask about it. Do NOT repeat or bring up the exam countdown or streak in every response.
 - When suggesting study strategies, align with their preferred study time and Pomodoro settings.

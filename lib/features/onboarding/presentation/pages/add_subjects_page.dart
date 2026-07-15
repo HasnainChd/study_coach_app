@@ -35,7 +35,7 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
   void _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 30)),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
       builder: (context, child) {

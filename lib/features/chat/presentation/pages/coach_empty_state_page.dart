@@ -181,9 +181,9 @@ class CoachEmptyStatePage extends StatelessWidget {
                   size: 20,
                 ),
                 onPressed: () {
-                  // Switch to onboarding addSubjects page
+                  // Switch to Subjects tab inside Dashboard
                   context.read<NavigationBloc>().add(
-                        NavigateToScreenEvent(AppScreen.addSubjects),
+                        SwitchDashboardTabEvent(3),
                       );
                 },
               ),

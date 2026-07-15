@@ -36,35 +36,41 @@ class FocusTimerPage extends StatelessWidget {
               current.status == TimerStatus.sessionComplete &&
               !current.isBreakComplete,
           listener: (context, state) {
+            final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
+
             // Show beautiful success snackbar
             AppSnackbar.show(
               context,
               type: SnackbarType.success,
               title: "Session Complete! 🎉",
-              message: "+50 XP earned. Keep it up!",
+              message: isFreeform
+                  ? "Great job on your freeform study session!"
+                  : "+50 XP earned. Keep it up!",
             );
 
-            // Dispatch ToggleAgendaItemEvent to mark current task complete
-            final subjectsBloc = context.read<SubjectsBloc>();
-            final agendaItems = subjectsBloc.state.agendaItems;
-            final taskId = state.taskId;
+            if (!isFreeform) {
+              // Dispatch ToggleAgendaItemEvent to mark current task complete
+              final subjectsBloc = context.read<SubjectsBloc>();
+              final agendaItems = subjectsBloc.state.agendaItems;
+              final taskId = state.taskId;
 
-            int matchingItemIndex = -1;
-            if (taskId != null) {
-              matchingItemIndex = agendaItems.indexWhere(
-                (item) => item.id == taskId && !item.isCompleted,
-              );
-            }
-            if (matchingItemIndex == -1 && state.taskTitle != null) {
-              matchingItemIndex = agendaItems.indexWhere(
-                (item) =>
-                    item.title == state.taskTitle && !item.isCompleted,
-              );
-            }
-            if (matchingItemIndex != -1) {
-              subjectsBloc.add(
-                ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id),
-              );
+              int matchingItemIndex = -1;
+              if (taskId != null) {
+                matchingItemIndex = agendaItems.indexWhere(
+                  (item) => item.id == taskId && !item.isCompleted,
+                );
+              }
+              if (matchingItemIndex == -1 && state.taskTitle != null) {
+                matchingItemIndex = agendaItems.indexWhere(
+                  (item) =>
+                      item.title == state.taskTitle && !item.isCompleted,
+                );
+              }
+              if (matchingItemIndex != -1) {
+                subjectsBloc.add(
+                  ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id),
+                );
+              }
             }
           },
           child: BlocBuilder<SubjectsBloc, SubjectsState>(
@@ -72,6 +78,7 @@ class FocusTimerPage extends StatelessWidget {
               final agendaItems = subjectsState.agendaItems;
               return BlocBuilder<TimerBloc, TimerState>(
                 builder: (context, state) {
+                  final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
                   final sessionNumber =
                       agendaSessionNumber(agendaItems, state.taskId);
                   final totalSessions = agendaTotalSessions(agendaItems);
@@ -108,7 +115,9 @@ class FocusTimerPage extends StatelessWidget {
 
                       // Session context & indicator dots
                       Text(
-                        'Focus Session $sessionNumber of $totalSessions',
+                        isFreeform
+                            ? 'Freeform Session'
+                            : 'Focus Session $sessionNumber of $totalSessions',
                         style: AppTextStyles.headingSmall.copyWith(
                           color: isDark
                               ? AppColors.darkTextPrimary
@@ -116,27 +125,29 @@ class FocusTimerPage extends StatelessWidget {
                           fontSize: 18,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Session dots row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(totalSessions, (index) {
-                          final isActive = index == (sessionNumber - 1);
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? AppColors.primary
-                                  : (isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightBorder),
-                              shape: BoxShape.circle,
-                            ),
-                          );
-                        }),
-                      ),
+                      if (!isFreeform) ...[
+                        const SizedBox(height: 12),
+                        // Session dots row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(totalSessions, (index) {
+                            final isActive = index == (sessionNumber - 1);
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? AppColors.primary
+                                    : (isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder),
+                                shape: BoxShape.circle,
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
 
                       const Spacer(),
 
@@ -307,6 +318,19 @@ class FocusTimerPage extends StatelessWidget {
                                       final currentTaskId = state.taskId;
                                       if (currentTaskId == null) return;
 
+                                      if (currentTaskId.startsWith('freeform_')) {
+                                        context
+                                            .read<TimerBloc>()
+                                            .add(ResetTimerEvent());
+                                        context
+                                            .read<NavigationBloc>()
+                                            .add(SwitchDashboardTabEvent(0));
+                                        context
+                                            .read<NavigationBloc>()
+                                            .add(NavigateToScreenEvent(AppScreen.dashboard));
+                                        return;
+                                      }
+
                                       if (agendaItems.indexWhere(
                                             (item) => item.id == currentTaskId,
                                           ) <
@@ -462,6 +486,7 @@ class SessionCompleteModal extends StatelessWidget {
     final settings = subjectsBloc.state.settings;
     final breakMinutes =
         isLongBreak ? settings.longBreak : settings.shortBreak;
+    final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -516,7 +541,7 @@ class SessionCompleteModal extends StatelessWidget {
           const SizedBox(height: 8),
 
           // 3. XP earned text
-          if (!isBreakComplete) ...[
+          if (!isBreakComplete && !isFreeform) ...[
             const Text(
               '+50 XP Earned!',
               style: TextStyle(
@@ -529,142 +554,157 @@ class SessionCompleteModal extends StatelessWidget {
             const SizedBox(height: 8),
           ],
 
-          // 4. Session counter
-          Text(
-            'Session $sessionNumber of $totalSessions complete',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-
-          // 5. Break type label
-          Text(
-            isBreakComplete
-                ? 'Ready for your next study session?'
-                : (isLongBreak
-                    ? 'Long Break — $breakMinutes minutes'
-                    : 'Short Break — $breakMinutes minutes'),
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
-                  : AppColors.lightTextSecondary.withValues(alpha: 0.7),
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-
-          // Next Task Preview Section
-          Text(
-            'Up Next:',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.03)
-                  : Colors.black.withValues(alpha: 0.02),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
+          if (!isFreeform) ...[
+            // 4. Session counter
+            Text(
+              'Session $sessionNumber of $totalSessions complete',
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-                width: 1,
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // 5. Break type label
+            Text(
+              isBreakComplete
+                  ? 'Ready for your next study session?'
+                  : (isLongBreak
+                      ? 'Long Break — $breakMinutes minutes'
+                      : 'Short Break — $breakMinutes minutes'),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: isDark
+                    ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
+                    : AppColors.lightTextSecondary.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+
+            // Next Task Preview Section
+            Text(
+              'Up Next:',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
-            child: nextItem != null
-                ? Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: nextItem.tagColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          nextItem.tag,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: nextItem.tagColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : Colors.black.withValues(alpha: 0.02),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  width: 1,
+                ),
+              ),
+              child: nextItem != null
+                  ? Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: nextItem.tagColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            nextItem.tag,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: nextItem.tagColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          nextItem.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodyMedium.copyWith(
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            nextItem.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.lightTextPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white
-                                : AppColors.lightTextPrimary,
-                            fontWeight: FontWeight.w600,
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.black.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${nextItem.durationMinutes}m',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(6),
+                      ],
+                    )
+                  : Center(
+                      child: Text(
+                        'All tasks complete! 🎉',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.subjectGreen,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Text(
-                          '${nextItem.durationMinutes}m',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Center(
-                    child: Text(
-                      'All tasks complete! 🎉',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.subjectGreen,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-          ),
-          const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
+          ] else ...[
+            Text(
+              'Great job focusing on ${state.subjectName ?? 'your study'}!',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+                fontSize: 15,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+          ],
 
           // 6 & 7. Buttons
-          if (!isBreakComplete) ...[
-            // Start Break Button
+          if (isFreeform) ...[
             GestureDetector(
               onTap: () {
-                context.read<TimerBloc>().add(
-                      StartBreakEvent(
-                        isLongBreak: isLongBreak,
-                        durationSeconds: breakMinutes * 60,
-                      ),
-                    );
+                context.read<TimerBloc>().add(ResetTimerEvent());
+                context
+                    .read<NavigationBloc>()
+                    .add(NavigateToScreenEvent(AppScreen.focusTimer)); // Navigate to clear/reset state properly or stay on dashboard
+                // Wait! Let's navigate to dashboard since it's the home screen
+                context
+                    .read<NavigationBloc>()
+                    .add(NavigateToScreenEvent(AppScreen.dashboard));
               },
               child: Container(
                 width: double.infinity,
@@ -678,7 +718,7 @@ class SessionCompleteModal extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Start Break',
+                  'Back to Home',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -688,86 +728,17 @@ class SessionCompleteModal extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Skip Break Button
-            GestureDetector(
-              onTap: () {
-                final taskTitle = state.taskTitle;
-                if (taskTitle != null) {
-                  final agendaItems = subjectsBloc.state.agendaItems;
-                  final matchingItemIndex = agendaItems.indexWhere(
-                    (item) => item.title == taskTitle && !item.isCompleted,
-                  );
-                  if (matchingItemIndex != -1) {
-                    subjectsBloc.add(ToggleAgendaItemEvent(
-                        agendaItems[matchingItemIndex].id));
-                  }
-                }
-
-                if (nextItem != null) {
-                  context.read<TimerBloc>().add(SkipBreakEvent(
-                        nextTaskId: nextItem.id,
-                        nextDurationSeconds: nextItem.durationMinutes * 60,
-                        nextTaskTitle: nextItem.title,
-                        nextSubjectName: nextItem.tag,
-                        nextSubjectColor: nextItem.tagColor,
-                      ));
-                } else {
-                  context.read<TimerBloc>().add(ResetTimerEvent());
-                  context
-                      .read<NavigationBloc>()
-                      .add(NavigateToScreenEvent(AppScreen.dashboard));
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    width: 1.5,
-                  ),
-                  color: isDark ? const Color(0xFF2E2B54) : Colors.white,
-                ),
-                child: Text(
-                  'Skip Break',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
           ] else ...[
-            if (nextItem != null) ...[
-              // Start Next Session Button
+            if (!isBreakComplete) ...[
+              // Start Break Button
               GestureDetector(
                 onTap: () {
-                  // Mark current task complete
-                  final taskTitle = state.taskTitle;
-                  if (taskTitle != null) {
-                    final subjectsBloc = context.read<SubjectsBloc>();
-                    final agendaItems = subjectsBloc.state.agendaItems;
-                    final matchingItemIndex = agendaItems.indexWhere(
-                      (item) => item.title == taskTitle && !item.isCompleted,
-                    );
-                    if (matchingItemIndex != -1) {
-                      subjectsBloc.add(ToggleAgendaItemEvent(
-                          agendaItems[matchingItemIndex].id));
-                    }
-                  }
-
-                  context.read<TimerBloc>().add(StartTimerEvent(
-                        taskId: nextItem.id,
-                        durationSeconds: nextItem.durationMinutes * 60,
-                        taskTitle: nextItem.title,
-                        subjectName: nextItem.tag,
-                        subjectColor: nextItem.tagColor,
-                      ));
+                  context.read<TimerBloc>().add(
+                        StartBreakEvent(
+                          isLongBreak: isLongBreak,
+                          durationSeconds: breakMinutes * 60,
+                        ),
+                      );
                 },
                 child: Container(
                   width: double.infinity,
@@ -781,7 +752,7 @@ class SessionCompleteModal extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Start Next Session',
+                    'Start Break',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -792,14 +763,11 @@ class SessionCompleteModal extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-            ] else ...[
-              // All Done Today! 🎉 Button
+              // Skip Break Button
               GestureDetector(
                 onTap: () {
-                  // Mark current task complete
                   final taskTitle = state.taskTitle;
                   if (taskTitle != null) {
-                    final subjectsBloc = context.read<SubjectsBloc>();
                     final agendaItems = subjectsBloc.state.agendaItems;
                     final matchingItemIndex = agendaItems.indexWhere(
                       (item) => item.title == taskTitle && !item.isCompleted,
@@ -810,38 +778,112 @@ class SessionCompleteModal extends StatelessWidget {
                     }
                   }
 
-                  context.read<TimerBloc>().add(ResetTimerEvent());
-                  context
-                      .read<NavigationBloc>()
-                      .add(NavigateToScreenEvent(AppScreen.dashboard));
+                  if (nextItem != null) {
+                    context.read<TimerBloc>().add(SkipBreakEvent(
+                          nextTaskId: nextItem.id,
+                          nextDurationSeconds: nextItem.durationMinutes * 60,
+                          nextTaskTitle: nextItem.title,
+                          nextSubjectName: nextItem.tag,
+                          nextSubjectColor: nextItem.tagColor,
+                        ));
+                  } else {
+                    context.read<TimerBloc>().add(ResetTimerEvent());
+                    context
+                        .read<NavigationBloc>()
+                        .add(NavigateToScreenEvent(AppScreen.dashboard));
+                  }
                 },
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [AppColors.subjectGreen, AppColors.subjectBlue],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                    border: Border.all(
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      width: 1.5,
                     ),
+                    color: isDark ? const Color(0xFF2E2B54) : Colors.white,
                   ),
-                  child: const Text(
-                    'All Done Today! 🎉',
+                  child: Text(
+                    'Skip Break',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-            ],
-            // All Done Button
+            ] else ...[
+              if (nextItem != null) ...[
+                // Start Next Session Button
+                GestureDetector(
+                  onTap: () {
+                    // Mark current task complete
+                    final taskTitle = state.taskTitle;
+                    if (taskTitle != null) {
+                      final subjectsBloc = context.read<SubjectsBloc>();
+                      final agendaItems = subjectsBloc.state.agendaItems;
+                      final matchingItemIndex = agendaItems.indexWhere(
+                        (item) => item.title == taskTitle && !item.isCompleted,
+                      );
+                      if (matchingItemIndex != -1) {
+                        subjectsBloc.add(ToggleAgendaItemEvent(
+                            agendaItems[matchingItemIndex].id));
+                      }
+                    }
+
+                    context.read<TimerBloc>().add(StartTimerEvent(
+                          taskId: nextItem.id,
+                          durationSeconds: nextItem.durationMinutes * 60,
+                          taskTitle: nextItem.title,
+                          subjectName: nextItem.tag,
+                          subjectColor: nextItem.tagColor,
+                        ));
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.subjectPurple],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: const Text(
+                      'Start Next Session',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            const SizedBox(height: 12),
+          ] else ...[
+            // All Done Today! 🎉 Button
             GestureDetector(
               onTap: () {
+                // Mark current task complete
+                final taskTitle = state.taskTitle;
+                if (taskTitle != null) {
+                  final subjectsBloc = context.read<SubjectsBloc>();
+                  final agendaItems = subjectsBloc.state.agendaItems;
+                  final matchingItemIndex = agendaItems.indexWhere(
+                    (item) => item.title == taskTitle && !item.isCompleted,
+                  );
+                  if (matchingItemIndex != -1) {
+                    subjectsBloc.add(ToggleAgendaItemEvent(
+                        agendaItems[matchingItemIndex].id));
+                  }
+                }
+
                 context.read<TimerBloc>().add(ResetTimerEvent());
                 context
                     .read<NavigationBloc>()
@@ -852,29 +894,62 @@ class SessionCompleteModal extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    width: 1.5,
+                  gradient: const LinearGradient(
+                    colors: [AppColors.subjectGreen, AppColors.subjectBlue],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
-                  color: isDark ? const Color(0xFF2E2B54) : Colors.white,
                 ),
-                child: Text(
-                  'All Done',
+                child: const Text(
+                  'All Done Today! 🎉',
                   style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
             ),
+            const SizedBox(height: 12),
           ],
+          // All Done Button
+          GestureDetector(
+            onTap: () {
+              context.read<TimerBloc>().add(ResetTimerEvent());
+              context
+                  .read<NavigationBloc>()
+                  .add(NavigateToScreenEvent(AppScreen.dashboard));
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 1.5,
+                ),
+                color: isDark ? const Color(0xFF2E2B54) : Colors.white,
+              ),
+              child: Text(
+                'All Done',
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         ],
-      ),
-    );
-  }
+      ],
+    ],
+  ),
+);
+}
 }
 
 class SessionsEndedModal extends StatelessWidget {
