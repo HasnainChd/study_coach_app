@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/services/notification_service.dart';
+import 'core/services/usage_limit_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_snackbar.dart';
 import 'features/analytics/data/datasources/study_history_local_data_source.dart';
@@ -48,6 +49,10 @@ void main() async {
   // Dedicated box for completed-task study history (analytics)
   final studyHistoryBox = await Hive.openBox('study_history_box');
 
+  // Dedicated box for usage limit tracking
+  final usageLimitsBox = await Hive.openBox('usage_limits');
+  final usageLimitService = UsageLimitService(usageLimitsBox);
+
   // Initialize notifications service
   final notificationService = NotificationService();
   await notificationService.init();
@@ -77,6 +82,7 @@ void main() async {
     studyHistoryRepository: studyHistoryRepository,
     timerLocalDataSource: timerLocalDataSource,
     initialScreen: initialScreen,
+    usageLimitService: usageLimitService,
   ));
 }
 
@@ -88,6 +94,7 @@ class MyApp extends StatelessWidget {
   final StudyHistoryRepository studyHistoryRepository;
   final TimerLocalDataSource timerLocalDataSource;
   final AppScreen initialScreen;
+  final UsageLimitService usageLimitService;
 
   const MyApp({
     super.key,
@@ -97,6 +104,7 @@ class MyApp extends StatelessWidget {
     required this.studyHistoryRepository,
     required this.timerLocalDataSource,
     required this.initialScreen,
+    required this.usageLimitService,
   });
 
   @override
@@ -115,6 +123,7 @@ class MyApp extends StatelessWidget {
             removeSubjectUseCase: RemoveSubjectUseCase(repository),
             generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
             studyHistoryRepository: studyHistoryRepository,
+            usageLimitService: usageLimitService,
           )..add(LoadSubjectsEvent()),
         ),
         BlocProvider<AnalyticsBloc>(
@@ -131,6 +140,7 @@ class MyApp extends StatelessWidget {
           create: (context) => ChatBloc(
             chatRepository: chatRepository,
             initialSubjectsState: context.read<SubjectsBloc>().state,
+            usageLimitService: usageLimitService,
           ),
         ),
       ],

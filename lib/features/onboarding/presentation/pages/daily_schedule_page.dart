@@ -12,6 +12,7 @@ import '../../../bloc/navigation_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_event.dart';
 import '../../../subjects/presentation/bloc/subjects_state.dart';
+import '../../../../core/services/usage_limit_service.dart';
 
 class DailySchedulePage extends StatelessWidget {
   const DailySchedulePage({super.key});
@@ -36,6 +37,66 @@ class DailySchedulePage extends StatelessWidget {
             context.read<NavigationBloc>().add(
                   NavigateToScreenEvent(AppScreen.dashboard),
                 );
+          } else if (state.status == SubjectsStatus.limitReached) {
+            showDialog(
+              context: context,
+              builder: (dialogContext) => Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Daily Limit Reached',
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "You've used ${UsageType.planGenerate.limit}/${UsageType.planGenerate.limit} plan creations today. Please try again tomorrow.",
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(dialogContext),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                    AppColors.primary,
+                                    Color(0xFF805CFF),
+                                  ],
+                                ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
           } else if (state.status == SubjectsStatus.failure &&
               state.errorMessage != null) {
             final errorMsg = state.errorMessage!;

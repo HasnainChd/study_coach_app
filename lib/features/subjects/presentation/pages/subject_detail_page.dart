@@ -391,8 +391,18 @@ class SubjectDetailPage extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return BlocBuilder<SubjectsBloc, SubjectsState>(
-      builder: (context, state) {
+    return BlocListener<NavigationBloc, NavigationState>(
+      listenWhen: (previous, current) =>
+          previous.currentScreen != current.currentScreen &&
+          current.currentScreen == AppScreen.focusTimer,
+      listener: (context, navState) {
+        final route = ModalRoute.of(context);
+        if (route != null) {
+          Navigator.of(context).removeRoute(route);
+        }
+      },
+      child: BlocBuilder<SubjectsBloc, SubjectsState>(
+        builder: (context, state) {
         // Find subject in state
         final subjectIndex = state.subjects.indexWhere((s) => s.id == subjectId);
         if (subjectIndex == -1) {
@@ -528,6 +538,57 @@ class SubjectDetailPage extends StatelessWidget {
                                       backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                                       valueColor: AlwaysStoppedAnimation<Color>(subject.color),
                                       minHeight: 8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  GestureDetector(
+                                    onTap: () {
+                                      final focusMinutes = state.settings.pomodoroFocus;
+                                      context.read<TimerBloc>().add(
+                                        StartTimerEvent(
+                                          taskId: 'freeform_${subject.id}',
+                                          durationSeconds: focusMinutes * 60,
+                                          taskTitle: 'Freeform Study',
+                                          subjectName: subject.name,
+                                          subjectColor: subject.color,
+                                        ),
+                                      );
+                                      context.read<NavigationBloc>().add(
+                                        NavigateToScreenEvent(AppScreen.focusTimer),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: subject.color.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: subject.color.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.play_circle_fill_rounded,
+                                            color: subject.color,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            (totalCount > 0 && completedCount == totalCount)
+                                                ? 'Extra Practice Session (${state.settings.pomodoroFocus}m)'
+                                                : 'Start Freeform Session (${state.settings.pomodoroFocus}m)',
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -713,8 +774,9 @@ class SubjectDetailPage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNoTasksState(bool isDark) {
     return Center(

@@ -2,7 +2,7 @@ import '../../domain/entities/subject.dart';
 import '../../domain/entities/agenda_item.dart';
 import '../../domain/entities/settings_preferences.dart';
 
-enum SubjectsStatus { initial, loading, success, failure, planGenerating, planGenerated }
+enum SubjectsStatus { initial, loading, success, failure, planGenerating, planGenerated, limitReached }
 
 class SubjectsState {
   final List<Subject> subjects;

@@ -220,7 +220,7 @@ class SubjectManagerPage extends StatelessWidget {
                             context,
                             type: SnackbarType.info,
                             title: 'Subject Added',
-                            message: 'Regenerate plan to include $name in tomorrow\'s schedule.',
+                            message: 'Regenerate plan to include $name in your schedule.',
                           );
                           Navigator.pop(modalContext);
                         },

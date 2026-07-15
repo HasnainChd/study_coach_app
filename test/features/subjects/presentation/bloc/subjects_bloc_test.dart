@@ -14,6 +14,7 @@ import 'package:study_coach_app/features/subjects/domain/usecases/generate_study
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_bloc.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_event.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_state.dart';
+import 'package:study_coach_app/core/services/usage_limit_service.dart';
 
 class MockStudyHistoryRepository implements StudyHistoryRepository {
   List<StudyHistoryEntry> entries = [];
@@ -161,6 +162,28 @@ class MockGenerateStudyPlanUseCase implements GenerateStudyPlanUseCase {
   }
 }
 
+class FakeUsageLimitService implements UsageLimitService {
+  @override
+  Future<bool> canPerformAction(UsageType type) async => true;
+
+  @override
+  Future<void> recordAction(UsageType type) async {}
+
+  @override
+  Future<int> remainingToday(UsageType type) async => type.limit;
+}
+
+class DeniedUsageLimitService implements UsageLimitService {
+  @override
+  Future<bool> canPerformAction(UsageType type) async => false;
+
+  @override
+  Future<void> recordAction(UsageType type) async {}
+
+  @override
+  Future<int> remainingToday(UsageType type) async => 0;
+}
+
 void main() {
   late MockSubjectRepository repository;
   late GetSubjectsUseCase getSubjectsUseCase;
@@ -184,6 +207,7 @@ void main() {
       removeSubjectUseCase: removeSubjectUseCase,
       generateStudyPlanUseCase: generateStudyPlanUseCase,
       studyHistoryRepository: studyHistoryRepository,
+      usageLimitService: FakeUsageLimitService(),
     );
   });
 
@@ -622,5 +646,39 @@ void main() {
             state.agendaItems.first.tagColor == Colors.red),
       ]),
     );
+  });
+
+  test('GenerateStudyPlanEvent and RegenerateStudyPlanEvent emit limitReached and reset to initial when limit is reached', () async {
+    final deniedBloc = SubjectsBloc(
+      repository: repository,
+      getSubjectsUseCase: getSubjectsUseCase,
+      addSubjectUseCase: addSubjectUseCase,
+      removeSubjectUseCase: removeSubjectUseCase,
+      generateStudyPlanUseCase: generateStudyPlanUseCase,
+      studyHistoryRepository: studyHistoryRepository,
+      usageLimitService: DeniedUsageLimitService(),
+    );
+
+    deniedBloc.add(GenerateStudyPlanEvent());
+
+    await expectLater(
+      deniedBloc.stream,
+      emitsInOrder([
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.limitReached),
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.initial),
+      ]),
+    );
+
+    deniedBloc.add(RegenerateStudyPlanEvent(30, '09:00'));
+
+    await expectLater(
+      deniedBloc.stream,
+      emitsInOrder([
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.limitReached),
+        predicate<SubjectsState>((state) => state.status == SubjectsStatus.initial),
+      ]),
+    );
+
+    await deniedBloc.close();
   });
 }

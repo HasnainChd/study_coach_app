@@ -644,6 +644,16 @@ class HomeDashboardPage extends StatelessWidget {
                         );
                       }
                       final items = state.agendaItems;
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        limitReached
+                                            ? 'Daily Limit Reached'
+                                            : 'No Plan Generated Yet',
+                                        style: AppTextStyles.headingSmall.copyWith(
+                                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
                       return ListView.separated(
                         padding: EdgeInsets.zero,
                         itemCount: items.length,

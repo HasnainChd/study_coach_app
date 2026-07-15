@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/services/usage_limit_service.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
 import '../../../bloc/chat_bloc.dart';
@@ -162,7 +163,8 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
+          backgroundColor:
+              isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
           title: Text(
             'Regenerate Study Plan?',
             style: TextStyle(
@@ -173,7 +175,9 @@ class SettingsPage extends StatelessWidget {
           content: Text(
             "This will replace all of today's tasks with a fresh plan including all your current subjects. XP and streak already earned will be kept. Continue?",
             style: TextStyle(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ),
           actions: [
@@ -195,15 +199,16 @@ class SettingsPage extends StatelessWidget {
                     Navigator.pop(dialogContext);
                     final state = context.read<SubjectsBloc>().state;
                     context.read<SubjectsBloc>().add(
-                      RegenerateStudyPlanEvent(
-                        state.dailyStudyMinutes,
-                        state.preferredTime,
-                      ),
-                    );
+                          RegenerateStudyPlanEvent(
+                            state.dailyStudyMinutes,
+                            state.preferredTime,
+                          ),
+                        );
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
@@ -236,7 +241,8 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
+          backgroundColor:
+              isDark ? AppColors.darkOverlayBg : AppColors.lightCardBg,
           title: Text(
             'Reset Conversation?',
             style: TextStyle(
@@ -247,7 +253,9 @@ class SettingsPage extends StatelessWidget {
           content: Text(
             "This will clear all past chat history with your AI Study Coach. This action cannot be undone. Continue?",
             style: TextStyle(
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ),
           actions: [
@@ -320,6 +328,35 @@ class SettingsPage extends StatelessWidget {
                 title: "Study plan regenerated! 🚀",
                 message: "Your new study plan is ready!",
               );
+            } else if (state.status == SubjectsStatus.limitReached) {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor:
+                      isDark ? AppColors.darkOverlayBg : Colors.white,
+                  title: Text(
+                    'Daily limit reached',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  content: Text(
+                    "You've used ${UsageType.planRegenerate.limit}/${UsageType.planRegenerate.limit} today. Please try again tomorrow.",
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
             } else if (state.status == SubjectsStatus.failure) {
               AppSnackbar.show(
                 context,
@@ -335,8 +372,8 @@ class SettingsPage extends StatelessWidget {
             return Stack(
               children: [
                 SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -521,16 +558,16 @@ class SettingsPage extends StatelessWidget {
                               min: 15,
                               max: 240,
                               divisions: 15,
-                              onChanged: state.status ==
-                                      SubjectsStatus.planGenerating
-                                  ? null
-                                  : (val) {
-                                      context.read<SubjectsBloc>().add(
-                                            UpdateDailyMinutesEvent(
-                                              val.toInt(),
-                                            ),
-                                          );
-                                    },
+                              onChanged:
+                                  state.status == SubjectsStatus.planGenerating
+                                      ? null
+                                      : (val) {
+                                          context.read<SubjectsBloc>().add(
+                                                UpdateDailyMinutesEvent(
+                                                  val.toInt(),
+                                                ),
+                                              );
+                                        },
                               onChangeEnd: state.status ==
                                       SubjectsStatus.planGenerating
                                   ? null
@@ -675,7 +712,8 @@ class SettingsPage extends StatelessWidget {
                             ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Divider(color: Colors.transparent, height: 1),
+                              child:
+                                  Divider(color: Colors.transparent, height: 1),
                             ),
                             _buildChoiceSelector(
                               context,
@@ -692,7 +730,8 @@ class SettingsPage extends StatelessWidget {
                             ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Divider(color: Colors.transparent, height: 1),
+                              child:
+                                  Divider(color: Colors.transparent, height: 1),
                             ),
                             _buildChoiceSelector(
                               context,
@@ -806,10 +845,12 @@ class SettingsPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GestureDetector(
-                                onTap: () => _showResetChatConfirmation(context),
+                                onTap: () =>
+                                    _showResetChatConfirmation(context),
                                 behavior: HitTestBehavior.opaque,
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
                                     'Reset Conversation',
                                     style: AppTextStyles.bodyLarge.copyWith(
@@ -824,7 +865,8 @@ class SettingsPage extends StatelessWidget {
                                     _showRegenerateConfirmation(context),
                                 behavior: HitTestBehavior.opaque,
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
                                     'Regenerate Study Plan',
                                     style: AppTextStyles.bodyLarge.copyWith(
@@ -834,7 +876,6 @@ class SettingsPage extends StatelessWidget {
                                   ),
                                 ),
                               ),
-
                             ],
                           ),
                         ),
@@ -851,7 +892,8 @@ class SettingsPage extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 40.0),
                             child: GlassCard(
                               padding: const EdgeInsets.all(28.0),
                               child: Column(
@@ -974,7 +1016,9 @@ class SettingsPage extends StatelessWidget {
             label,
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
             ),
           ),
           Switch(

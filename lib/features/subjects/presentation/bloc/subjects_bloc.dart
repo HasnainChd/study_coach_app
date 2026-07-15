@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../analytics/domain/entities/study_history_entry.dart';
 import '../../../analytics/domain/repositories/study_history_repository.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/usage_limit_service.dart';
 import '../../domain/entities/subject.dart';
 import '../../domain/entities/agenda_item.dart';
 import '../../domain/entities/settings_preferences.dart';
@@ -33,6 +34,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
   final RemoveSubjectUseCase removeSubjectUseCase;
   final GenerateStudyPlanUseCase generateStudyPlanUseCase;
   final StudyHistoryRepository studyHistoryRepository;
+  final UsageLimitService usageLimitService;
 
   Subject? _lastDeletedSubject;
   List<AgendaItem>? _lastDeletedAgendaItems;
@@ -44,6 +46,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     required this.removeSubjectUseCase,
     required this.generateStudyPlanUseCase,
     required this.studyHistoryRepository,
+    required this.usageLimitService,
   }) : super(SubjectsState(
           subjects: const [],
           agendaItems: const [],
@@ -546,6 +549,13 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     GenerateStudyPlanEvent event,
     Emitter<SubjectsState> emit,
   ) async {
+    final canPerform = await usageLimitService.canPerformAction(UsageType.planGenerate);
+    if (!canPerform) {
+      emit(state.copyWith(status: SubjectsStatus.limitReached));
+      emit(state.copyWith(status: SubjectsStatus.initial));
+      return;
+    }
+
     emit(state.copyWith(
       status: SubjectsStatus.planGenerating,
       errorMessage: null,
@@ -561,6 +571,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       // Persist that onboarding is completed
       await repository.saveHasCompletedOnboarding(true);
 
+      // Record action on success
+      await usageLimitService.recordAction(UsageType.planGenerate);
 
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,
@@ -581,6 +593,13 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     RegenerateStudyPlanEvent event,
     Emitter<SubjectsState> emit,
   ) async {
+    final canPerform = await usageLimitService.canPerformAction(UsageType.planRegenerate);
+    if (!canPerform) {
+      emit(state.copyWith(status: SubjectsStatus.limitReached));
+      emit(state.copyWith(status: SubjectsStatus.initial));
+      return;
+    }
+
     emit(state.copyWith(
       status: SubjectsStatus.planGenerating,
       errorMessage: null,
@@ -596,6 +615,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       );
       await repository.saveAgendaItems(result.agendaItems);
 
+      // Record action on success
+      await usageLimitService.recordAction(UsageType.planRegenerate);
 
       emit(state.copyWith(
         status: SubjectsStatus.planGenerated,
