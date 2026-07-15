@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="study_coach_app"
+        android:label="Study Coach AI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

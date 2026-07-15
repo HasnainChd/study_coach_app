@@ -1,4 +1,4 @@
-package com.example.study_coach_app
+package com.devorastudio.studycoach
 
 import android.Manifest
 import android.content.Context
