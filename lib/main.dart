@@ -27,13 +27,11 @@ import 'features/onboarding/presentation/pages/daily_schedule_page.dart';
 import 'features/onboarding/presentation/pages/welcome_page.dart';
 import 'features/subjects/data/datasources/subject_local_data_source.dart';
 import 'features/subjects/data/repositories/subject_repository_impl.dart';
-
 import 'features/subjects/domain/repositories/subject_repository.dart';
 import 'features/subjects/domain/usecases/add_subject_usecase.dart';
 import 'features/subjects/domain/usecases/generate_study_plan_usecase.dart';
 import 'features/subjects/domain/usecases/get_subjects_usecase.dart';
 import 'features/subjects/domain/usecases/remove_subject_usecase.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,7 +83,6 @@ void main() async {
     usageLimitService: usageLimitService,
   ));
 }
-
 
 class MyApp extends StatelessWidget {
   final Box hiveBox;
@@ -144,7 +141,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-
       child: BlocBuilder<ThemeBloc, ThemeMode>(
         builder: (context, themeMode) {
           return MaterialApp(
@@ -163,8 +159,7 @@ class MyApp extends StatelessWidget {
                     context,
                     type: SnackbarType.warning,
                     title: 'Notifications disabled',
-                    message:
-                        'Notifications are disabled in system settings. '
+                    message: 'Notifications are disabled in system settings. '
                         'Enable them to receive reminders.',
                   );
                   context.read<SubjectsBloc>().add(
