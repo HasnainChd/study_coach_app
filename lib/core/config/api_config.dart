@@ -6,6 +6,6 @@ class ApiConfig {
 
   static String get cerebrasApiKey => (dotenv.env['GROQ_API_KEY'] ?? '').trim();
 
-  static const String cerebrasModel = 'llama-3.3-70b-versatile';
+  static const String cerebrasModel = 'openai/gpt-oss-120b';
   static const String cerebrasBaseUrl = 'https://api.groq.com/openai/v1';
 }
