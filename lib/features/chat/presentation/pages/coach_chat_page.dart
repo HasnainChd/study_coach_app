@@ -11,6 +11,7 @@ import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/services/usage_limit_service.dart';
 import '../../../bloc/chat_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
+import '../../../bloc/timer_bloc.dart';
 
 class CoachChatPage extends StatefulWidget {
   const CoachChatPage({super.key});
@@ -23,20 +24,26 @@ class _CoachChatPageState extends State<CoachChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<SubjectsState>? _subjectsSubscription;
+  StreamSubscription<TimerState>? _timerSubscription;
 
   @override
   void initState() {
     super.initState();
 
     final subjectsBloc = context.read<SubjectsBloc>();
+    final timerBloc = context.read<TimerBloc>();
     final chatBloc = context.read<ChatBloc>();
 
     // Sync initial state into ChatBloc.
     chatBloc.updateSubjectsState(subjectsBloc.state);
+    chatBloc.updateTimerState(timerBloc.state);
 
-    // Keep ChatBloc informed of future SubjectsBloc changes.
+    // Keep ChatBloc informed of future SubjectsBloc & TimerBloc changes.
     _subjectsSubscription = subjectsBloc.stream.listen((subjectsState) {
       chatBloc.updateSubjectsState(subjectsState);
+    });
+    _timerSubscription = timerBloc.stream.listen((timerState) {
+      chatBloc.updateTimerState(timerState);
     });
 
     // Restore persisted messages (or emit welcome message on first run).
@@ -46,6 +53,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   @override
   void dispose() {
     _subjectsSubscription?.cancel();
+    _timerSubscription?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();

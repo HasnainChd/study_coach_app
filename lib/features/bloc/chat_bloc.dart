@@ -12,6 +12,7 @@ import '../chat/domain/repositories/chat_repository.dart';
 import '../subjects/domain/entities/agenda_item.dart';
 import '../subjects/domain/entities/subject.dart';
 import '../subjects/presentation/bloc/subjects_state.dart';
+import 'timer_bloc.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Domain types
@@ -134,12 +135,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// The page updates this reference each time SubjectsBloc changes.
   SubjectsState _subjectsState;
 
+  /// Snapshot of the TimerBloc state.
+  TimerState? _timerState;
+
   ChatBloc({
     required ChatRepository chatRepository,
     required SubjectsState initialSubjectsState,
+    TimerState? initialTimerState,
     required UsageLimitService usageLimitService,
   })  : _chatRepository = chatRepository,
         _subjectsState = initialSubjectsState,
+        _timerState = initialTimerState,
         _usageLimitService = usageLimitService,
         super(const ChatState(messages: [])) {
     on<LoadChatHistoryEvent>(_onLoadHistory);
@@ -153,6 +159,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// prompt always uses the latest real data.
   void updateSubjectsState(SubjectsState state) {
     _subjectsState = state;
+  }
+
+  /// Called by the UI whenever TimerBloc emits a new state.
+  void updateTimerState(TimerState state) {
+    _timerState = state;
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -327,6 +338,34 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   // ── Prompt builders ───────────────────────────────────────────────────────
 
+  String _formatTimerContext() {
+    final t = _timerState;
+    if (t == null || t.status == TimerStatus.idle || t.status == TimerStatus.sessionsEnded) {
+      return '(No active timer session currently running)';
+    }
+
+    final isPaused = t.status == TimerStatus.paused;
+    final remainingSecs = isPaused && t.pausedRemainingSeconds != null
+        ? t.pausedRemainingSeconds!
+        : t.remainingSeconds;
+
+    final totalSecs = t.totalSeconds > 0 ? t.totalSeconds : 1500;
+    final elapsedSecs = (totalSecs - remainingSecs).clamp(0, totalSecs);
+    final elapsedMins = (elapsedSecs / 60).floor();
+    final totalMins = (totalSecs / 60).round();
+
+    final sessionType = t.isBreakTime ? 'active break' : 'Pomodoro focus session';
+    final statusStr = isPaused ? 'paused' : 'active';
+    final subjectInfo = t.subjectName != null && t.subjectName!.trim().isNotEmpty
+        ? ' for ${t.subjectName}'
+        : '';
+    final taskInfo = t.taskTitle != null && t.taskTitle!.trim().isNotEmpty
+        ? ' ("${t.taskTitle}")'
+        : '';
+
+    return 'Currently in a $statusStr $sessionType$subjectInfo$taskInfo, $elapsedMins minutes elapsed of $totalMins minute block.';
+  }
+
   Future<String> _buildSystemPrompt() async {
     final name = await _getUserName();
     final s = _subjectsState;
@@ -335,6 +374,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final agendaStr = _formatAgenda(s.agendaItems);
     final completedCount = s.agendaItems.where((a) => a.isCompleted).length;
     final totalCount = s.agendaItems.length;
+    final timerStr = _formatTimerContext();
 
     return '''
 You are a warm, encouraging personal AI Study Coach inside a student study app.
@@ -356,6 +396,9 @@ Daily Study Goal: ${s.dailyStudyMinutes} minutes
 Preferred Study Time: ${s.preferredTime}
 Pomodoro Focus: ${s.settings.pomodoroFocus} min | Short Break: ${s.settings.shortBreak} min | Long Break: ${s.settings.longBreak} min
 
+=== ACTIVE TIMER SESSION ===
+$timerStr
+
 === COACHING STYLE & SESSION STRUCTURE ===
 - Be warm, motivating, and concise (2–4 sentences unless asked for detail).
 - Use the student's name (${name.isEmpty ? 'buddy' : name}) sparingly and naturally (e.g., only in greetings or occasionally for warmth, not in every single response).
@@ -369,7 +412,7 @@ Pomodoro Focus: ${s.settings.pomodoroFocus} min | Short Break: ${s.settings.shor
   2. Practice (ask at least 2 practice questions sequentially to the student)
   3. Recap
 - PHASE PROGRESSION: Do NOT advance to a new topic or phase until the current phase is actually complete. For Practice specifically, a phase is NOT complete just because you say "let's move on" — at least one practice question must have been asked AND the student must have responded to it before moving to recap or a new topic.
-- NO ELAPSED TIME HALLUCINATION: Do NOT state or imply elapsed session time (e.g., "you're 20 minutes into your session") unless exact timer data is explicitly provided in the prompt. If no timer data is present, do not reference elapsed time at all.
+- NO ELAPSED TIME HALLUCINATION: Do NOT state or imply elapsed session time (e.g., "you're 20 minutes into your session") unless exact timer data is explicitly provided in ACTIVE TIMER SESSION above. If no active timer session is running (or it says "(No active timer session currently running)"), do NOT mention or reference elapsed session time at all.
 - SKIPPING/EARLY END: If the student asks to skip ahead or end early, comply politely, but do not later claim that a skipped phase was completed.
 ''';
   }

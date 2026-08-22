@@ -140,6 +140,7 @@ class MyApp extends StatelessWidget {
           create: (context) => ChatBloc(
             chatRepository: chatRepository,
             initialSubjectsState: context.read<SubjectsBloc>().state,
+            initialTimerState: context.read<TimerBloc>().state,
             usageLimitService: usageLimitService,
           ),
         ),
