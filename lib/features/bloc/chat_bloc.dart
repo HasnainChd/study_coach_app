@@ -288,12 +288,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<String> _callCerebrasApi(List<ChatMessage> history) async {
     final systemPrompt = await _buildSystemPrompt();
 
-    // Build the messages array: system + entire history.
+    // Build the messages array: system + today's history only.
     final apiMessages = <Map<String, String>>[
       {'role': 'system', 'content': systemPrompt},
     ];
 
-    for (final msg in history) {
+    final now = DateTime.now();
+    final todayMessages = history.where((msg) {
+      final t = msg.timestamp;
+      return t.year == now.year && t.month == now.month && t.day == now.day;
+    }).toList();
+
+    for (final msg in todayMessages) {
       apiMessages.add({
         'role': msg.sender == MessageSender.user ? 'user' : 'assistant',
         'content': msg.text,

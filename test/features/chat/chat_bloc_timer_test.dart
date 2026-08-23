@@ -107,4 +107,31 @@ void main() {
     chatBloc.updateTimerState(breakTimerState);
     expect(breakTimerState.isBreakTime, isTrue);
   });
+
+  test('ChatMessage date filtering separates past messages from today', () {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+
+    final oldMsg = ChatMessage(
+      id: '1',
+      sender: MessageSender.user,
+      text: 'Old message from yesterday',
+      timestamp: yesterday,
+    );
+    final todayMsg = ChatMessage(
+      id: '2',
+      sender: MessageSender.user,
+      text: 'Today message',
+      timestamp: now,
+    );
+
+    final history = [oldMsg, todayMsg];
+    final todayFiltered = history.where((msg) {
+      final t = msg.timestamp;
+      return t.year == now.year && t.month == now.month && t.day == now.day;
+    }).toList();
+
+    expect(todayFiltered.length, equals(1));
+    expect(todayFiltered.first.text, equals('Today message'));
+  });
 }

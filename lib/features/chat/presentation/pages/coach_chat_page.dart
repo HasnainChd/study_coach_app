@@ -48,6 +48,11 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     // Restore persisted messages (or emit welcome message on first run).
     chatBloc.add(LoadChatHistoryEvent());
+
+    // Fix Bug 3: Ensure list scrolls/jumps to the bottom on initial mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom(animate: false);
+    });
   }
 
   @override
@@ -59,14 +64,18 @@ class _CoachChatPageState extends State<CoachChatPage> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (animate) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        } else {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
       }
     });
   }
@@ -76,7 +85,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     if (text.isEmpty) return;
     context.read<ChatBloc>().add(SendMessageEvent(text));
     _textController.clear();
-    _scrollToBottom();
+    _scrollToBottom(animate: true);
   }
 
   void _showClearDialog() {
@@ -340,7 +349,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                       child: TextField(
                         controller: _textController,
                         onSubmitted: (_) => _sendMessage(),
-                        maxLines: null,
+                        minLines: 1,
+                        maxLines: 5,
                         style: TextStyle(
                           color: isDark
                               ? Colors.white
@@ -432,6 +442,14 @@ class _MessageBubble extends StatelessWidget {
     required this.isDark,
   });
 
+  String _formatMarkdownSpacing(String text) {
+    if (text.isEmpty) return text;
+    return text.replaceAllMapped(
+      RegExp(r'([^\n])\s*(\*\*[A-Z1-9][^*]+\*\*|\b[1-9]\.\s+[A-Z]|\#\#\#)'),
+      (match) => '${match[1]}\n\n${match[2]}',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -461,7 +479,7 @@ class _MessageBubble extends StatelessWidget {
         ],
       ),
       child: Text(
-        message.text,
+        _formatMarkdownSpacing(message.text),
         style: AppTextStyles.bodyLarge.copyWith(
           color: isBot
               ? (isDark
