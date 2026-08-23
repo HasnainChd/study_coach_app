@@ -580,6 +580,30 @@ class HomeDashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
+                // Active Session Indicator
+                BlocBuilder<TimerBloc, TimerState>(
+                  builder: (context, timerState) {
+                    final isActive = timerState.status == TimerStatus.running ||
+                        timerState.status == TimerStatus.paused ||
+                        timerState.status == TimerStatus.onBreak;
+
+                    if (!isActive) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ActiveTimerSessionCard(
+                          timerState: timerState,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
+                ),
+
                 // Today's Agenda header
                 Text(
                   "Today's Agenda",
@@ -1171,6 +1195,168 @@ class LevelUpOverlay extends StatelessWidget {
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveTimerSessionCard extends StatelessWidget {
+  final TimerState timerState;
+  final bool isDark;
+
+  const _ActiveTimerSessionCard({
+    required this.timerState,
+    required this.isDark,
+  });
+
+  String _formatTime(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPaused = timerState.status == TimerStatus.paused;
+    final isBreak = timerState.isBreakTime;
+    final title = isBreak
+        ? 'Active Break'
+        : (timerState.taskTitle ?? timerState.subjectName ?? 'Focus Session');
+    final subtitle = isBreak
+        ? 'Take a breather'
+        : (timerState.subjectName ?? 'Timer Session');
+    final subjectColor = timerState.subjectColor ?? AppColors.primary;
+
+    return GestureDetector(
+      onTap: () {
+        context.read<NavigationBloc>().add(
+              NavigateToScreenEvent(AppScreen.focusTimer),
+            );
+      },
+      child: GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(14.0),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isBreak
+                      ? const Color(0xFFE5F6FF)
+                      : (isPaused
+                          ? const Color(0xFFFFF7E5)
+                          : subjectColor.withValues(alpha: 0.15)),
+                ),
+                child: Center(
+                  child: Icon(
+                    isBreak
+                        ? Icons.coffee_rounded
+                        : (isPaused
+                            ? Icons.pause_circle_rounded
+                            : Icons.timer_outlined),
+                    color: isBreak
+                        ? Colors.lightBlue
+                        : (isPaused ? Colors.orange : subjectColor),
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isPaused
+                                ? Colors.orange
+                                : (isBreak ? Colors.lightBlue : Colors.green),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isPaused
+                              ? 'PAUSED'
+                              : (isBreak ? 'BREAK TIME' : 'FOCUSING NOW'),
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: isPaused
+                                ? Colors.orange
+                                : (isBreak ? Colors.lightBlue : Colors.green),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTime(timerState.remainingSeconds),
+                    style: AppTextStyles.headingMedium.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
+                      fontSize: 18,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: Icon(
+                      timerState.isRunning
+                          ? Icons.pause_circle_filled_rounded
+                          : Icons.play_circle_fill_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    ),
+                    onPressed: () {
+                      if (timerState.isRunning) {
+                        context.read<TimerBloc>().add(PauseTimerEvent());
+                      } else {
+                        context.read<TimerBloc>().add(StartTimerEvent());
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           ),

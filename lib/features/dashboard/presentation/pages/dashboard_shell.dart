@@ -3,11 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../analytics/presentation/pages/study_analytics_page.dart';
 import '../../../analytics/presentation/bloc/analytics_bloc.dart';
 import '../../../analytics/presentation/bloc/analytics_event.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
+import '../../../bloc/timer_bloc.dart';
 import '../../../chat/presentation/pages/coach_chat_page.dart';
 import '../../../chat/presentation/pages/coach_empty_state_page.dart';
 import '../../../home/presentation/pages/home_dashboard_page.dart';
@@ -22,89 +24,130 @@ class DashboardShell extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return BlocBuilder<NavigationBloc, NavigationState>(
-      builder: (context, navState) {
-        return Scaffold(
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _buildPage(navState.activeTabIndex),
-          ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
-              border: Border(
-                top: BorderSide(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  width: 1.2,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      context,
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home_rounded,
-                      label: 'Home',
-                      index: 0,
-                      activeIndex: navState.activeTabIndex,
-                      isDark: isDark,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.bar_chart_outlined,
-                      activeIcon: Icons.bar_chart_rounded,
-                      label: 'Analytics',
-                      index: 1,
-                      activeIndex: navState.activeTabIndex,
-                      isDark: isDark,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.smart_toy_outlined,
-                      activeIcon: Icons.smart_toy_rounded,
-                      label: 'Coach',
-                      index: 2,
-                      activeIndex: navState.activeTabIndex,
-                      isDark: isDark,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.menu_book_outlined,
-                      activeIcon: Icons.menu_book_rounded,
-                      label: 'Subjects',
-                      index: 3,
-                      activeIndex: navState.activeTabIndex,
-                      isDark: isDark,
-                    ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.settings_outlined,
-                      activeIcon: Icons.settings_rounded,
-                      label: 'Settings',
-                      index: 4,
-                      activeIndex: navState.activeTabIndex,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    return BlocListener<TimerBloc, TimerState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status &&
+          current.status == TimerStatus.sessionComplete &&
+          !current.isBreakComplete,
+      listener: (context, state) {
+        final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
+
+        AppSnackbar.show(
+          context,
+          type: SnackbarType.success,
+          title: "Session Complete! 🎉",
+          message: isFreeform
+              ? "Great job on your freeform study session!"
+              : "+50 XP earned. Keep it up!",
         );
+
+        if (!isFreeform) {
+          final subjectsBloc = context.read<SubjectsBloc>();
+          final agendaItems = subjectsBloc.state.agendaItems;
+          final taskId = state.taskId;
+
+          int matchingItemIndex = -1;
+          if (taskId != null) {
+            matchingItemIndex = agendaItems.indexWhere(
+              (item) => item.id == taskId && !item.isCompleted,
+            );
+          }
+          if (matchingItemIndex == -1 && state.taskTitle != null) {
+            matchingItemIndex = agendaItems.indexWhere(
+              (item) => item.title == state.taskTitle && !item.isCompleted,
+            );
+          }
+          if (matchingItemIndex != -1) {
+            subjectsBloc.add(
+              ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id),
+            );
+          }
+        }
       },
+      child: BlocBuilder<NavigationBloc, NavigationState>(
+        builder: (context, navState) {
+          return Scaffold(
+            body: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _buildPage(navState.activeTabIndex),
+            ),
+            bottomNavigationBar: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    width: 1.2,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(
+                        context,
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Home',
+                        index: 0,
+                        activeIndex: navState.activeTabIndex,
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.bar_chart_outlined,
+                        activeIcon: Icons.bar_chart_rounded,
+                        label: 'Analytics',
+                        index: 1,
+                        activeIndex: navState.activeTabIndex,
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.smart_toy_outlined,
+                        activeIcon: Icons.smart_toy_rounded,
+                        label: 'Coach',
+                        index: 2,
+                        activeIndex: navState.activeTabIndex,
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.menu_book_outlined,
+                        activeIcon: Icons.menu_book_rounded,
+                        label: 'Subjects',
+                        index: 3,
+                        activeIndex: navState.activeTabIndex,
+                        isDark: isDark,
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.settings_outlined,
+                        activeIcon: Icons.settings_rounded,
+                        label: 'Settings',
+                        index: 4,
+                        activeIndex: navState.activeTabIndex,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

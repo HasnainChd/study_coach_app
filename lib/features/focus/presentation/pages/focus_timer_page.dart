@@ -28,62 +28,18 @@ class FocusTimerPage extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      body: GradientBackground(
-        child: BlocListener<TimerBloc, TimerState>(
-          listenWhen: (previous, current) =>
-              previous.status != current.status &&
-              current.status == TimerStatus.sessionComplete &&
-              !current.isBreakComplete,
-          listener: (context, state) {
-            final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
+    return Scaffold(body: GradientBackground(
+      child: BlocBuilder<SubjectsBloc, SubjectsState>(
+        builder: (context, subjectsState) {
+          final agendaItems = subjectsState.agendaItems;
+          return BlocBuilder<TimerBloc, TimerState>(
+            builder: (context, state) {
+              final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
+              final sessionNumber =
+                  agendaSessionNumber(agendaItems, state.taskId);
+              final totalSessions = agendaTotalSessions(agendaItems);
 
-            // Show beautiful success snackbar
-            AppSnackbar.show(
-              context,
-              type: SnackbarType.success,
-              title: "Session Complete! 🎉",
-              message: isFreeform
-                  ? "Great job on your freeform study session!"
-                  : "+50 XP earned. Keep it up!",
-            );
-
-            if (!isFreeform) {
-              // Dispatch ToggleAgendaItemEvent to mark current task complete
-              final subjectsBloc = context.read<SubjectsBloc>();
-              final agendaItems = subjectsBloc.state.agendaItems;
-              final taskId = state.taskId;
-
-              int matchingItemIndex = -1;
-              if (taskId != null) {
-                matchingItemIndex = agendaItems.indexWhere(
-                  (item) => item.id == taskId && !item.isCompleted,
-                );
-              }
-              if (matchingItemIndex == -1 && state.taskTitle != null) {
-                matchingItemIndex = agendaItems.indexWhere(
-                  (item) =>
-                      item.title == state.taskTitle && !item.isCompleted,
-                );
-              }
-              if (matchingItemIndex != -1) {
-                subjectsBloc.add(
-                  ToggleAgendaItemEvent(agendaItems[matchingItemIndex].id),
-                );
-              }
-            }
-          },
-          child: BlocBuilder<SubjectsBloc, SubjectsState>(
-            builder: (context, subjectsState) {
-              final agendaItems = subjectsState.agendaItems;
-              return BlocBuilder<TimerBloc, TimerState>(
-                builder: (context, state) {
-                  final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
-                  final sessionNumber =
-                      agendaSessionNumber(agendaItems, state.taskId);
-                  final totalSessions = agendaTotalSessions(agendaItems);
-
-                  return Stack(
+              return Stack(
                 children: [
                   Column(
                     children: [
@@ -318,16 +274,17 @@ class FocusTimerPage extends StatelessWidget {
                                       final currentTaskId = state.taskId;
                                       if (currentTaskId == null) return;
 
-                                      if (currentTaskId.startsWith('freeform_')) {
+                                      if (currentTaskId
+                                          .startsWith('freeform_')) {
                                         context
                                             .read<TimerBloc>()
                                             .add(ResetTimerEvent());
                                         context
                                             .read<NavigationBloc>()
                                             .add(SwitchDashboardTabEvent(0));
-                                        context
-                                            .read<NavigationBloc>()
-                                            .add(NavigateToScreenEvent(AppScreen.dashboard));
+                                        context.read<NavigationBloc>().add(
+                                            NavigateToScreenEvent(
+                                                AppScreen.dashboard));
                                         return;
                                       }
 
@@ -338,7 +295,8 @@ class FocusTimerPage extends StatelessWidget {
                                         return;
                                       }
 
-                                      final next = agendaNextIncompleteItemForward(
+                                      final next =
+                                          agendaNextIncompleteItemForward(
                                         agendaItems,
                                         currentTaskId,
                                       );
@@ -351,16 +309,16 @@ class FocusTimerPage extends StatelessWidget {
                                       }
 
                                       context.read<TimerBloc>().add(
-                                        SkipSessionEvent(
-                                          taskId: next.id,
-                                          durationSeconds:
-                                              next.durationMinutes * 60,
-                                          taskTitle: next.title,
-                                          subjectName: next.tag,
-                                          subjectColor: next.tagColor,
-                                          isRunning: true,
-                                        ),
-                                      );
+                                            SkipSessionEvent(
+                                              taskId: next.id,
+                                              durationSeconds:
+                                                  next.durationMinutes * 60,
+                                              taskTitle: next.title,
+                                              subjectName: next.tag,
+                                              subjectColor: next.tagColor,
+                                              isRunning: true,
+                                            ),
+                                          );
                                       AppSnackbar.show(
                                         context,
                                         type: SnackbarType.info,
@@ -452,13 +410,11 @@ class FocusTimerPage extends StatelessWidget {
                     ),
                 ],
               );
-                },
-              );
             },
-          ),
-        ),
+          );
+        },
       ),
-    );
+    ));
   }
 }
 
@@ -484,8 +440,7 @@ class SessionCompleteModal extends StatelessWidget {
     final nextItem = agendaNextItemAtIndex(agendaItems, state.taskId);
     final isLongBreak = isLongBreakForAgendaSession(sessionNumber);
     final settings = subjectsBloc.state.settings;
-    final breakMinutes =
-        isLongBreak ? settings.longBreak : settings.shortBreak;
+    final breakMinutes = isLongBreak ? settings.longBreak : settings.shortBreak;
     final isFreeform = state.taskId?.startsWith('freeform_') ?? false;
 
     return Container(
@@ -698,9 +653,8 @@ class SessionCompleteModal extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 context.read<TimerBloc>().add(ResetTimerEvent());
-                context
-                    .read<NavigationBloc>()
-                    .add(NavigateToScreenEvent(AppScreen.focusTimer)); // Navigate to clear/reset state properly or stay on dashboard
+                context.read<NavigationBloc>().add(NavigateToScreenEvent(AppScreen
+                    .focusTimer)); // Navigate to clear/reset state properly or stay on dashboard
                 // Wait! Let's navigate to dashboard since it's the home screen
                 context
                     .read<NavigationBloc>()
@@ -865,91 +819,91 @@ class SessionCompleteModal extends StatelessWidget {
                     ),
                   ),
                 ),
-            const SizedBox(height: 12),
-          ] else ...[
-            // All Done Today! 🎉 Button
-            GestureDetector(
-              onTap: () {
-                // Mark current task complete
-                final taskTitle = state.taskTitle;
-                if (taskTitle != null) {
-                  final subjectsBloc = context.read<SubjectsBloc>();
-                  final agendaItems = subjectsBloc.state.agendaItems;
-                  final matchingItemIndex = agendaItems.indexWhere(
-                    (item) => item.title == taskTitle && !item.isCompleted,
-                  );
-                  if (matchingItemIndex != -1) {
-                    subjectsBloc.add(ToggleAgendaItemEvent(
-                        agendaItems[matchingItemIndex].id));
-                  }
-                }
+                const SizedBox(height: 12),
+              ] else ...[
+                // All Done Today! 🎉 Button
+                GestureDetector(
+                  onTap: () {
+                    // Mark current task complete
+                    final taskTitle = state.taskTitle;
+                    if (taskTitle != null) {
+                      final subjectsBloc = context.read<SubjectsBloc>();
+                      final agendaItems = subjectsBloc.state.agendaItems;
+                      final matchingItemIndex = agendaItems.indexWhere(
+                        (item) => item.title == taskTitle && !item.isCompleted,
+                      );
+                      if (matchingItemIndex != -1) {
+                        subjectsBloc.add(ToggleAgendaItemEvent(
+                            agendaItems[matchingItemIndex].id));
+                      }
+                    }
 
-                context.read<TimerBloc>().add(ResetTimerEvent());
-                context
-                    .read<NavigationBloc>()
-                    .add(NavigateToScreenEvent(AppScreen.dashboard));
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [AppColors.subjectGreen, AppColors.subjectBlue],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+                    context.read<TimerBloc>().add(ResetTimerEvent());
+                    context
+                        .read<NavigationBloc>()
+                        .add(NavigateToScreenEvent(AppScreen.dashboard));
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.subjectGreen, AppColors.subjectBlue],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: const Text(
+                      'All Done Today! 🎉',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'All Done Today! 🎉',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                const SizedBox(height: 12),
+              ],
+              // All Done Button
+              GestureDetector(
+                onTap: () {
+                  context.read<TimerBloc>().add(ResetTimerEvent());
+                  context
+                      .read<NavigationBloc>()
+                      .add(NavigateToScreenEvent(AppScreen.dashboard));
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      width: 1.5,
+                    ),
+                    color: isDark ? const Color(0xFF2E2B54) : Colors.white,
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    'All Done',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+            ],
           ],
-          // All Done Button
-          GestureDetector(
-            onTap: () {
-              context.read<TimerBloc>().add(ResetTimerEvent());
-              context
-                  .read<NavigationBloc>()
-                  .add(NavigateToScreenEvent(AppScreen.dashboard));
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color:
-                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  width: 1.5,
-                ),
-                color: isDark ? const Color(0xFF2E2B54) : Colors.white,
-              ),
-              child: Text(
-                'All Done',
-                style: TextStyle(
-                  color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
         ],
-      ],
-    ],
-  ),
-);
-}
+      ),
+    );
+  }
 }
 
 class SessionsEndedModal extends StatelessWidget {
