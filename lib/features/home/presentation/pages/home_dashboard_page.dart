@@ -598,7 +598,7 @@ class HomeDashboardPage extends StatelessWidget {
                           timerState: timerState,
                           isDark: isDark,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                       ],
                     );
                   },
@@ -766,6 +766,17 @@ class HomeDashboardPage extends StatelessWidget {
                                 // Checkbox Circle (wrapped in GestureDetector to toggle checklist state)
                                 GestureDetector(
                                   onTap: () {
+                                    final timerState =
+                                        context.read<TimerBloc>().state;
+                                    if ((timerState.status ==
+                                                TimerStatus.running ||
+                                            timerState.status ==
+                                                TimerStatus.paused) &&
+                                        timerState.taskId == item.id) {
+                                      context
+                                          .read<TimerBloc>()
+                                          .add(ResetTimerEvent());
+                                    }
                                     context.read<SubjectsBloc>().add(
                                           ToggleAgendaItemEvent(item.id),
                                         );
@@ -1239,12 +1250,13 @@ class _ActiveTimerSessionCard extends StatelessWidget {
       },
       child: GlassCard(
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isBreak
@@ -1263,11 +1275,11 @@ class _ActiveTimerSessionCard extends StatelessWidget {
                     color: isBreak
                         ? Colors.lightBlue
                         : (isPaused ? Colors.orange : subjectColor),
-                    size: 24,
+                    size: 22,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1300,7 +1312,7 @@ class _ActiveTimerSessionCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       title,
                       maxLines: 1,
@@ -1339,14 +1351,16 @@ class _ActiveTimerSessionCard extends StatelessWidget {
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     icon: Icon(
                       timerState.isRunning
                           ? Icons.pause_circle_filled_rounded
                           : Icons.play_circle_fill_rounded,
                       color: AppColors.primary,
-                      size: 32,
+                      size: 30,
                     ),
                     onPressed: () {
                       if (timerState.isRunning) {

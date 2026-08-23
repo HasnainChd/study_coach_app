@@ -123,6 +123,9 @@ class SendMessageEvent extends ChatEvent {
 /// Clear all chat history.
 class ClearChatEvent extends ChatEvent {}
 
+/// Refresh the dynamic UI-only welcome message.
+class RefreshWelcomeMessageEvent extends ChatEvent {}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOC
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,6 +154,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LoadChatHistoryEvent>(_onLoadHistory);
     on<SendMessageEvent>(_onSendMessage);
     on<ClearChatEvent>(_onClearChat);
+    on<RefreshWelcomeMessageEvent>(_onRefreshWelcomeMessage);
+  }
+
+  static const welcomeMessageId = 'welcome_greeting';
+
+  static bool _isWelcomeMessage(ChatMessage msg) {
+    return msg.id == welcomeMessageId ||
+        (msg.sender == MessageSender.bot &&
+            (msg.text.contains('Scholar.') ||
+                msg.text.contains('I\'m your AI coach')));
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -159,6 +172,24 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// prompt always uses the latest real data.
   void updateSubjectsState(SubjectsState state) {
     _subjectsState = state;
+    final msgs = this.state.messages;
+    if (msgs.isEmpty || (msgs.length == 1 && _isWelcomeMessage(msgs.first))) {
+      add(RefreshWelcomeMessageEvent());
+    }
+  }
+
+  Future<void> _onRefreshWelcomeMessage(
+    RefreshWelcomeMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final welcome = await _buildWelcomeMessage();
+    final welcomeMsg = ChatMessage(
+      id: welcomeMessageId,
+      sender: MessageSender.bot,
+      text: welcome,
+      timestamp: DateTime.now(),
+    );
+    emit(state.copyWith(messages: [welcomeMsg]));
   }
 
   /// Called by the UI whenever TimerBloc emits a new state.
@@ -173,7 +204,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
-    final models = await _chatRepository.getMessages();
+    var models = await _chatRepository.getMessages();
+
+    // Migration check: if sole persisted message is a stale welcome greeting, clear it
+    if (models.length == 1) {
+      final firstMsg = ChatMessage.fromModel(models.first);
+      if (_isWelcomeMessage(firstMsg)) {
+        await _chatRepository.clearMessages();
+        models = [];
+      }
+    }
+
     if (models.isNotEmpty) {
       final messages = models.map(ChatMessage.fromModel).toList();
       emit(state.copyWith(
@@ -182,18 +223,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         remainingMessages: remaining,
       ));
     } else {
-      // First-ever open — emit a personalised welcome based on real data.
+      // First-ever open (or zero persisted real messages) — emit UI-only welcome message
       final welcome = await _buildWelcomeMessage();
       final welcomeMsg = ChatMessage(
-        id: _newId(),
+        id: welcomeMessageId,
         sender: MessageSender.bot,
         text: welcome,
         timestamp: DateTime.now(),
       );
-      final initial = [welcomeMsg];
-      await _persistMessages(initial);
+      // DO NOT persist welcomeMsg to Hive
       emit(state.copyWith(
-        messages: initial,
+        messages: [welcomeMsg],
         clearError: true,
         remainingMessages: remaining,
       ));
@@ -214,14 +254,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       return;
     }
 
-    // 1. Append user message immediately.
+    // 1. Filter out UI-only welcome greeting before sending/persisting real messages.
+    final existingReal = state.messages.where((m) => !_isWelcomeMessage(m)).toList();
+
     final userMsg = ChatMessage(
       id: _newId(),
       sender: MessageSender.user,
       text: text,
       timestamp: DateTime.now(),
     );
-    final withUser = List<ChatMessage>.from(state.messages)..add(userMsg);
+    final withUser = List<ChatMessage>.from(existingReal)..add(userMsg);
     await _persistMessages(withUser);
     emit(state.copyWith(messages: withUser, isTyping: true, clearError: true));
 

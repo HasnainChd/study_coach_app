@@ -640,6 +640,17 @@ class SubjectDetailPage extends StatelessWidget {
                                           // Checkbox circle
                                           GestureDetector(
                                             onTap: () {
+                                              final timerState =
+                                                  context.read<TimerBloc>().state;
+                                              if ((timerState.status ==
+                                                          TimerStatus.running ||
+                                                      timerState.status ==
+                                                          TimerStatus.paused) &&
+                                                  timerState.taskId == item.id) {
+                                                context
+                                                    .read<TimerBloc>()
+                                                    .add(ResetTimerEvent());
+                                              }
                                               context.read<SubjectsBloc>().add(
                                                 ToggleAgendaItemEvent(item.id),
                                               );

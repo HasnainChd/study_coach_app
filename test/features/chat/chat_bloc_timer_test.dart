@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:study_coach_app/features/bloc/chat_bloc.dart';
 import 'package:study_coach_app/features/bloc/timer_bloc.dart';
+import 'package:study_coach_app/features/subjects/domain/entities/agenda_item.dart';
 import 'package:study_coach_app/features/subjects/presentation/bloc/subjects_state.dart';
 import 'package:study_coach_app/features/subjects/domain/entities/settings_preferences.dart';
 import 'package:study_coach_app/features/chat/domain/repositories/chat_repository.dart';
@@ -133,5 +135,45 @@ void main() {
 
     expect(todayFiltered.length, equals(1));
     expect(todayFiltered.first.text, equals('Today message'));
+  });
+
+  test('LoadChatHistoryEvent emits welcome message without persisting it to repository', () async {
+    chatBloc.add(LoadChatHistoryEvent());
+    await Future.delayed(Duration.zero);
+
+    expect(chatBloc.state.messages.length, equals(1));
+    expect(chatBloc.state.messages.first.id, equals('welcome_greeting'));
+
+    final stored = await fakeChatRepo.getMessages();
+    expect(stored, isEmpty);
+  });
+
+  test('updateSubjectsState recomputes welcome message dynamically when zero real messages exist', () async {
+    chatBloc.add(LoadChatHistoryEvent());
+    await Future.delayed(Duration.zero);
+
+    expect(chatBloc.state.messages.first.text, contains('All tasks for today are done'));
+
+    // Update subjectsState with pending agenda items
+    chatBloc.updateSubjectsState(SubjectsState(
+      subjects: const [],
+      agendaItems: [
+        AgendaItem(
+          id: 't1',
+          title: 'Math Homework',
+          tag: 'Math',
+          durationMinutes: 20,
+          tagColor: Colors.blue,
+        ),
+      ],
+      settings: SettingsPreferences(),
+    ));
+    await Future.delayed(Duration.zero);
+
+    expect(chatBloc.state.messages.first.text, contains('You still have 1 task on today\'s agenda'));
+    expect(chatBloc.state.messages.first.text, contains('Math Homework'));
+
+    final stored = await fakeChatRepo.getMessages();
+    expect(stored, isEmpty);
   });
 }

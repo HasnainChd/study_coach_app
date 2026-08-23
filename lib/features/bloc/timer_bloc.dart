@@ -29,6 +29,7 @@ class TimerState {
   final bool isBreakTime;
   final int workDurationSeconds;
   final int? pausedRemainingSeconds;
+  final StartTimerEvent? pendingStartEvent;
 
   TimerState({
     required this.remainingSeconds,
@@ -43,6 +44,7 @@ class TimerState {
     this.isBreakTime = false,
     this.workDurationSeconds = 25 * 60,
     this.pausedRemainingSeconds,
+    this.pendingStartEvent,
   });
 
   TimerState copyWith({
@@ -58,8 +60,10 @@ class TimerState {
     bool? isBreakTime,
     int? workDurationSeconds,
     int? pausedRemainingSeconds,
+    StartTimerEvent? pendingStartEvent,
     bool clearPausedRemainingSeconds = false,
     bool clearTaskId = false,
+    bool clearPendingStartEvent = false,
   }) {
     return TimerState(
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
@@ -76,6 +80,9 @@ class TimerState {
       pausedRemainingSeconds: clearPausedRemainingSeconds
           ? null
           : (pausedRemainingSeconds ?? this.pausedRemainingSeconds),
+      pendingStartEvent: clearPendingStartEvent
+          ? null
+          : (pendingStartEvent ?? this.pendingStartEvent),
     );
   }
 }
@@ -90,6 +97,7 @@ class StartTimerEvent extends TimerEvent {
   final String? subjectName;
   final Color? subjectColor;
   final bool? isRunning;
+  final bool force;
 
   StartTimerEvent({
     this.taskId,
@@ -98,8 +106,11 @@ class StartTimerEvent extends TimerEvent {
     this.subjectName,
     this.subjectColor,
     this.isRunning,
+    this.force = false,
   });
 }
+
+class ClearPendingStartEvent extends TimerEvent {}
 
 class PauseTimerEvent extends TimerEvent {}
 
@@ -188,6 +199,9 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
 
     on<StartTimerEvent>(_onStartTimer);
+    on<ClearPendingStartEvent>((event, emit) {
+      emit(state.copyWith(clearPendingStartEvent: true));
+    });
     on<TickEvent>(_onTick);
     on<PauseTimerEvent>(_onPauseTimer);
     on<ResetTimerEvent>(_onResetTimer);
@@ -210,6 +224,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> with WidgetsBindingObserver
       isRunning: false,
       status: TimerStatus.sessionsEnded,
       clearPausedRemainingSeconds: true,
+      clearPendingStartEvent: true,
     ));
   }
 
@@ -217,6 +232,18 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> with WidgetsBindingObserver
     StartTimerEvent event,
     Emitter<TimerState> emit,
   ) async {
+    final isConflict = !event.force &&
+        (state.status == TimerStatus.running ||
+            state.status == TimerStatus.paused) &&
+        state.taskId != null &&
+        event.taskId != null &&
+        state.taskId != event.taskId;
+
+    if (isConflict) {
+      emit(state.copyWith(pendingStartEvent: event));
+      return;
+    }
+
     _tickerSubscription?.cancel();
 
     final isInPlaceResume =

@@ -215,5 +215,71 @@ void main() {
       await Future.delayed(Duration.zero);
       expect(timerBloc.state.remainingSeconds, 10 * 60);
     });
+
+    test('StartTimerEvent for different task while running emits pendingStartEvent without overwriting active session', () async {
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_A',
+        durationSeconds: 1500,
+        taskTitle: 'Task A',
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(timerBloc.state.taskId, 'task_A');
+      expect(timerBloc.state.status, TimerStatus.running);
+
+      // Attempt to start Task B without force
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_B',
+        durationSeconds: 900,
+        taskTitle: 'Task B',
+      ));
+      await Future.delayed(Duration.zero);
+
+      // Should emit conflict pendingStartEvent, but keep Task A running
+      expect(timerBloc.state.pendingStartEvent, isNotNull);
+      expect(timerBloc.state.pendingStartEvent!.taskId, 'task_B');
+      expect(timerBloc.state.taskId, 'task_A');
+      expect(timerBloc.state.status, TimerStatus.running);
+    });
+
+    test('ClearPendingStartEvent clears pendingStartEvent', () async {
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_A',
+        durationSeconds: 1500,
+      ));
+      await Future.delayed(Duration.zero);
+
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_B',
+        durationSeconds: 900,
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(timerBloc.state.pendingStartEvent, isNotNull);
+
+      timerBloc.add(ClearPendingStartEvent());
+      await Future.delayed(Duration.zero);
+
+      expect(timerBloc.state.pendingStartEvent, isNull);
+    });
+
+    test('StartTimerEvent with force: true overwrites active session cleanly', () async {
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_A',
+        durationSeconds: 1500,
+      ));
+      await Future.delayed(Duration.zero);
+
+      timerBloc.add(StartTimerEvent(
+        taskId: 'task_B',
+        durationSeconds: 900,
+        force: true,
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(timerBloc.state.taskId, 'task_B');
+      expect(timerBloc.state.pendingStartEvent, isNull);
+      expect(timerBloc.state.remainingSeconds, 900);
+    });
   });
 }
