@@ -11,6 +11,7 @@ import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/services/usage_limit_service.dart';
 import '../../../bloc/chat_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
+import '../../../bloc/timer_bloc.dart';
 
 class CoachChatPage extends StatefulWidget {
   const CoachChatPage({super.key});
@@ -23,42 +24,58 @@ class _CoachChatPageState extends State<CoachChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<SubjectsState>? _subjectsSubscription;
+  StreamSubscription<TimerState>? _timerSubscription;
 
   @override
   void initState() {
     super.initState();
 
     final subjectsBloc = context.read<SubjectsBloc>();
+    final timerBloc = context.read<TimerBloc>();
     final chatBloc = context.read<ChatBloc>();
 
     // Sync initial state into ChatBloc.
     chatBloc.updateSubjectsState(subjectsBloc.state);
+    chatBloc.updateTimerState(timerBloc.state);
 
-    // Keep ChatBloc informed of future SubjectsBloc changes.
+    // Keep ChatBloc informed of future SubjectsBloc & TimerBloc changes.
     _subjectsSubscription = subjectsBloc.stream.listen((subjectsState) {
       chatBloc.updateSubjectsState(subjectsState);
+    });
+    _timerSubscription = timerBloc.stream.listen((timerState) {
+      chatBloc.updateTimerState(timerState);
     });
 
     // Restore persisted messages (or emit welcome message on first run).
     chatBloc.add(LoadChatHistoryEvent());
+
+    // Fix Bug 3: Ensure list scrolls/jumps to the bottom on initial mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom(animate: false);
+    });
   }
 
   @override
   void dispose() {
     _subjectsSubscription?.cancel();
+    _timerSubscription?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (animate) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        } else {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
       }
     });
   }
@@ -68,7 +85,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     if (text.isEmpty) return;
     context.read<ChatBloc>().add(SendMessageEvent(text));
     _textController.clear();
-    _scrollToBottom();
+    _scrollToBottom(animate: true);
   }
 
   void _showClearDialog() {
@@ -332,7 +349,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                       child: TextField(
                         controller: _textController,
                         onSubmitted: (_) => _sendMessage(),
-                        maxLines: null,
+                        minLines: 1,
+                        maxLines: 5,
                         style: TextStyle(
                           color: isDark
                               ? Colors.white
@@ -424,6 +442,14 @@ class _MessageBubble extends StatelessWidget {
     required this.isDark,
   });
 
+  String _formatMarkdownSpacing(String text) {
+    if (text.isEmpty) return text;
+    return text.replaceAllMapped(
+      RegExp(r'([^\n])\s*(\*\*[A-Z1-9][^*]+\*\*|\b[1-9]\.\s+[A-Z]|\#\#\#)'),
+      (match) => '${match[1]}\n\n${match[2]}',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -453,7 +479,7 @@ class _MessageBubble extends StatelessWidget {
         ],
       ),
       child: Text(
-        message.text,
+        _formatMarkdownSpacing(message.text),
         style: AppTextStyles.bodyLarge.copyWith(
           color: isBot
               ? (isDark

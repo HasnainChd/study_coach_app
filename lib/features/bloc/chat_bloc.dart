@@ -12,6 +12,7 @@ import '../chat/domain/repositories/chat_repository.dart';
 import '../subjects/domain/entities/agenda_item.dart';
 import '../subjects/domain/entities/subject.dart';
 import '../subjects/presentation/bloc/subjects_state.dart';
+import 'timer_bloc.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Domain types
@@ -122,6 +123,9 @@ class SendMessageEvent extends ChatEvent {
 /// Clear all chat history.
 class ClearChatEvent extends ChatEvent {}
 
+/// Refresh the dynamic UI-only welcome message.
+class RefreshWelcomeMessageEvent extends ChatEvent {}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOC
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,17 +138,32 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// The page updates this reference each time SubjectsBloc changes.
   SubjectsState _subjectsState;
 
+  /// Snapshot of the TimerBloc state.
+  TimerState? _timerState;
+
   ChatBloc({
     required ChatRepository chatRepository,
     required SubjectsState initialSubjectsState,
+    TimerState? initialTimerState,
     required UsageLimitService usageLimitService,
   })  : _chatRepository = chatRepository,
         _subjectsState = initialSubjectsState,
+        _timerState = initialTimerState,
         _usageLimitService = usageLimitService,
         super(const ChatState(messages: [])) {
     on<LoadChatHistoryEvent>(_onLoadHistory);
     on<SendMessageEvent>(_onSendMessage);
     on<ClearChatEvent>(_onClearChat);
+    on<RefreshWelcomeMessageEvent>(_onRefreshWelcomeMessage);
+  }
+
+  static const welcomeMessageId = 'welcome_greeting';
+
+  static bool _isWelcomeMessage(ChatMessage msg) {
+    return msg.id == welcomeMessageId ||
+        (msg.sender == MessageSender.bot &&
+            (msg.text.contains('Scholar.') ||
+                msg.text.contains('I\'m your AI coach')));
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -153,6 +172,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   /// prompt always uses the latest real data.
   void updateSubjectsState(SubjectsState state) {
     _subjectsState = state;
+    final msgs = this.state.messages;
+    if (msgs.isEmpty || (msgs.length == 1 && _isWelcomeMessage(msgs.first))) {
+      add(RefreshWelcomeMessageEvent());
+    }
+  }
+
+  Future<void> _onRefreshWelcomeMessage(
+    RefreshWelcomeMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    final welcome = await _buildWelcomeMessage();
+    final welcomeMsg = ChatMessage(
+      id: welcomeMessageId,
+      sender: MessageSender.bot,
+      text: welcome,
+      timestamp: DateTime.now(),
+    );
+    emit(state.copyWith(messages: [welcomeMsg]));
+  }
+
+  /// Called by the UI whenever TimerBloc emits a new state.
+  void updateTimerState(TimerState state) {
+    _timerState = state;
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -162,7 +204,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     final remaining = await _usageLimitService.remainingToday(UsageType.coachMessage);
-    final models = await _chatRepository.getMessages();
+    var models = await _chatRepository.getMessages();
+
+    // Migration check: if sole persisted message is a stale welcome greeting, clear it
+    if (models.length == 1) {
+      final firstMsg = ChatMessage.fromModel(models.first);
+      if (_isWelcomeMessage(firstMsg)) {
+        await _chatRepository.clearMessages();
+        models = [];
+      }
+    }
+
     if (models.isNotEmpty) {
       final messages = models.map(ChatMessage.fromModel).toList();
       emit(state.copyWith(
@@ -171,18 +223,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         remainingMessages: remaining,
       ));
     } else {
-      // First-ever open — emit a personalised welcome based on real data.
+      // First-ever open (or zero persisted real messages) — emit UI-only welcome message
       final welcome = await _buildWelcomeMessage();
       final welcomeMsg = ChatMessage(
-        id: _newId(),
+        id: welcomeMessageId,
         sender: MessageSender.bot,
         text: welcome,
         timestamp: DateTime.now(),
       );
-      final initial = [welcomeMsg];
-      await _persistMessages(initial);
+      // DO NOT persist welcomeMsg to Hive
       emit(state.copyWith(
-        messages: initial,
+        messages: [welcomeMsg],
         clearError: true,
         remainingMessages: remaining,
       ));
@@ -203,14 +254,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       return;
     }
 
-    // 1. Append user message immediately.
+    // 1. Filter out UI-only welcome greeting before sending/persisting real messages.
+    final existingReal = state.messages.where((m) => !_isWelcomeMessage(m)).toList();
+
     final userMsg = ChatMessage(
       id: _newId(),
       sender: MessageSender.user,
       text: text,
       timestamp: DateTime.now(),
     );
-    final withUser = List<ChatMessage>.from(state.messages)..add(userMsg);
+    final withUser = List<ChatMessage>.from(existingReal)..add(userMsg);
     await _persistMessages(withUser);
     emit(state.copyWith(messages: withUser, isTyping: true, clearError: true));
 
@@ -277,12 +330,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<String> _callCerebrasApi(List<ChatMessage> history) async {
     final systemPrompt = await _buildSystemPrompt();
 
-    // Build the messages array: system + entire history.
+    // Build the messages array: system + today's history only.
     final apiMessages = <Map<String, String>>[
       {'role': 'system', 'content': systemPrompt},
     ];
 
-    for (final msg in history) {
+    final now = DateTime.now();
+    final todayMessages = history.where((msg) {
+      final t = msg.timestamp;
+      return t.year == now.year && t.month == now.month && t.day == now.day;
+    }).toList();
+
+    for (final msg in todayMessages) {
       apiMessages.add({
         'role': msg.sender == MessageSender.user ? 'user' : 'assistant',
         'content': msg.text,
@@ -327,6 +386,34 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   // ── Prompt builders ───────────────────────────────────────────────────────
 
+  String _formatTimerContext() {
+    final t = _timerState;
+    if (t == null || t.status == TimerStatus.idle || t.status == TimerStatus.sessionsEnded) {
+      return '(No active timer session currently running)';
+    }
+
+    final isPaused = t.status == TimerStatus.paused;
+    final remainingSecs = isPaused && t.pausedRemainingSeconds != null
+        ? t.pausedRemainingSeconds!
+        : t.remainingSeconds;
+
+    final totalSecs = t.totalSeconds > 0 ? t.totalSeconds : 1500;
+    final elapsedSecs = (totalSecs - remainingSecs).clamp(0, totalSecs);
+    final elapsedMins = (elapsedSecs / 60).floor();
+    final totalMins = (totalSecs / 60).round();
+
+    final sessionType = t.isBreakTime ? 'active break' : 'Pomodoro focus session';
+    final statusStr = isPaused ? 'paused' : 'active';
+    final subjectInfo = t.subjectName != null && t.subjectName!.trim().isNotEmpty
+        ? ' for ${t.subjectName}'
+        : '';
+    final taskInfo = t.taskTitle != null && t.taskTitle!.trim().isNotEmpty
+        ? ' ("${t.taskTitle}")'
+        : '';
+
+    return 'Currently in a $statusStr $sessionType$subjectInfo$taskInfo, $elapsedMins minutes elapsed of $totalMins minute block.';
+  }
+
   Future<String> _buildSystemPrompt() async {
     final name = await _getUserName();
     final s = _subjectsState;
@@ -335,6 +422,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final agendaStr = _formatAgenda(s.agendaItems);
     final completedCount = s.agendaItems.where((a) => a.isCompleted).length;
     final totalCount = s.agendaItems.length;
+    final timerStr = _formatTimerContext();
 
     return '''
 You are a warm, encouraging personal AI Study Coach inside a student study app.
@@ -356,7 +444,10 @@ Daily Study Goal: ${s.dailyStudyMinutes} minutes
 Preferred Study Time: ${s.preferredTime}
 Pomodoro Focus: ${s.settings.pomodoroFocus} min | Short Break: ${s.settings.shortBreak} min | Long Break: ${s.settings.longBreak} min
 
-=== COACHING STYLE ===
+=== ACTIVE TIMER SESSION ===
+$timerStr
+
+=== COACHING STYLE & SESSION STRUCTURE ===
 - Be warm, motivating, and concise (2–4 sentences unless asked for detail).
 - Use the student's name (${name.isEmpty ? 'buddy' : name}) sparingly and naturally (e.g., only in greetings or occasionally for warmth, not in every single response).
 - Ground advice in their actual subjects, exam dates, and today's agenda above.
@@ -364,6 +455,13 @@ Pomodoro Focus: ${s.settings.pomodoroFocus} min | Short Break: ${s.settings.shor
 - When suggesting study strategies, align with their preferred study time and Pomodoro settings.
 - Celebrate streak milestones and XP gains only when relevant to keep motivation high.
 - Never make up subjects or tasks — only reference what is listed above.
+- STRUCTURE STUDY TOPICS: Structure any study session/topic into three distinct phases in order:
+  1. Concept Explanation
+  2. Practice (ask at least 2 practice questions sequentially to the student)
+  3. Recap
+- PHASE PROGRESSION: Do NOT advance to a new topic or phase until the current phase is actually complete. For Practice specifically, a phase is NOT complete just because you say "let's move on" — at least one practice question must have been asked AND the student must have responded to it before moving to recap or a new topic.
+- NO ELAPSED TIME HALLUCINATION: Do NOT state or imply elapsed session time (e.g., "you're 20 minutes into your session") unless exact timer data is explicitly provided in ACTIVE TIMER SESSION above. If no active timer session is running (or it says "(No active timer session currently running)"), do NOT mention or reference elapsed session time at all.
+- SKIPPING/EARLY END: If the student asks to skip ahead or end early, comply politely, but do not later claim that a skipped phase was completed.
 ''';
   }
 

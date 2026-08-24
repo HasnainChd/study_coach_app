@@ -5,8 +5,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/services/notification_service.dart';
 import 'core/services/usage_limit_service.dart';
+import 'core/theme/app_colors.dart';
+import 'core/theme/app_text_styles.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_snackbar.dart';
+import 'core/widgets/glass_card.dart';
 import 'features/analytics/data/datasources/study_history_local_data_source.dart';
 import 'features/analytics/data/repositories/study_history_repository_impl.dart';
 import 'features/analytics/domain/repositories/study_history_repository.dart';
@@ -137,6 +140,7 @@ class MyApp extends StatelessWidget {
           create: (context) => ChatBloc(
             chatRepository: chatRepository,
             initialSubjectsState: context.read<SubjectsBloc>().state,
+            initialTimerState: context.read<TimerBloc>().state,
             usageLimitService: usageLimitService,
           ),
         ),
@@ -166,36 +170,44 @@ class MyApp extends StatelessWidget {
                         ClearNotificationPermissionWarningEvent(),
                       );
                 },
-                child: BlocListener<NavigationBloc, NavigationState>(
-                  listener: (context, navState) {
-                    if (navState.currentScreen == AppScreen.focusTimer) {
-                      context.read<TimerBloc>().add(SyncTimerEvent());
-                    }
+                child: BlocListener<TimerBloc, TimerState>(
+                  listenWhen: (previous, current) =>
+                      previous.pendingStartEvent != current.pendingStartEvent &&
+                      current.pendingStartEvent != null,
+                  listener: (context, state) {
+                    _showActiveSessionConflictDialog(context, state);
                   },
-                  child: BlocBuilder<NavigationBloc, NavigationState>(
-                    builder: (context, navState) {
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 350),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                          final slideAnimation = Tween<Offset>(
-                            begin: const Offset(0.05, 0.0),
-                            end: Offset.zero,
-                          ).animate(animation);
-
-                          return SlideTransition(
-                            position: slideAnimation,
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: _buildScreen(navState.currentScreen),
-                      );
+                  child: BlocListener<NavigationBloc, NavigationState>(
+                    listener: (context, navState) {
+                      if (navState.currentScreen == AppScreen.focusTimer) {
+                        context.read<TimerBloc>().add(SyncTimerEvent());
+                      }
                     },
+                    child: BlocBuilder<NavigationBloc, NavigationState>(
+                      builder: (context, navState) {
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 350),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                            final slideAnimation = Tween<Offset>(
+                              begin: const Offset(0.05, 0.0),
+                              end: Offset.zero,
+                            ).animate(animation);
+
+                            return SlideTransition(
+                              position: slideAnimation,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _buildScreen(navState.currentScreen),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -204,6 +216,145 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _showActiveSessionConflictDialog(
+      BuildContext context, TimerState state) {
+    final pending = state.pendingStartEvent;
+    if (pending == null) return;
+
+    final activeTaskTitle =
+        state.taskTitle ?? state.subjectName ?? 'Active Session';
+    final elapsedSecs =
+        (state.totalSeconds - state.remainingSeconds).clamp(0, state.totalSeconds);
+    final elapsedFormatted = _formatElapsed(elapsedSecs);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: GlassCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Discard Active Session?',
+                        style: AppTextStyles.headingSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'You have an active session for "$activeTaskTitle" ($elapsedFormatted elapsed). Starting a new session will discard this progress. Discard and start new session?',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        context
+                            .read<TimerBloc>()
+                            .add(ClearPendingStartEvent());
+                      },
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        context
+                            .read<TimerBloc>()
+                            .add(ClearPendingStartEvent());
+                        context.read<TimerBloc>().add(StartTimerEvent(
+                              taskId: pending.taskId,
+                              durationSeconds: pending.durationSeconds,
+                              taskTitle: pending.taskTitle,
+                              subjectName: pending.subjectName,
+                              subjectColor: pending.subjectColor,
+                              isRunning: pending.isRunning,
+                              force: true,
+                            ));
+                        context.read<NavigationBloc>().add(
+                              NavigateToScreenEvent(AppScreen.focusTimer),
+                            );
+                      },
+                      child: const Text(
+                        'Discard & Start',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatElapsed(int elapsedSeconds) {
+    final mins = elapsedSeconds ~/ 60;
+    final secs = elapsedSeconds % 60;
+    if (mins > 0) {
+      return '$mins min ${secs > 0 ? '$secs sec' : ''}';
+    } else {
+      return '$secs sec';
+    }
   }
 
   Widget _buildScreen(AppScreen screen) {
