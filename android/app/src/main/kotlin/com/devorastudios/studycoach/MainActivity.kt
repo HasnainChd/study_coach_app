@@ -1,4 +1,4 @@
-package com.devorastudio.studycoach
+package com.devorastudios.studycoach
 
 import android.Manifest
 import android.content.Context

@@ -19,8 +19,7 @@ class HomeDashboardPage extends StatelessWidget {
 
   static final ValueNotifier<String?> userNameNotifier =
       ValueNotifier<String?>(null);
-  static final ValueNotifier<int?> levelUpNotifier =
-      ValueNotifier<int?>(null);
+  static final ValueNotifier<int?> levelUpNotifier = ValueNotifier<int?>(null);
   static int? _lastLevel;
 
   static void loadName() {
@@ -91,219 +90,235 @@ class HomeDashboardPage extends StatelessWidget {
           bloc: context.read<SubjectsBloc>(),
           builder: (context, state) {
             final todayClaimed = state.lastStreakClaimedDate == today;
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF151433) : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  width: 1.5,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Pull Handle
-                  Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+            return SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF151433) : Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Flame Icon
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFFFECE5),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_fire_department_rounded,
-                        color: Color(0xFFFF5100),
-                        size: 44,
+                  border: Border.all(
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    width: 1.5,
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Pull Handle
+                    Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                  // Streak Title
-                  Text(
-                    '${state.streak} Day Study Streak!',
-                    style: AppTextStyles.headingSmall.copyWith(
-                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                      fontSize: 22,
+                    // Flame Icon
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFFFECE5),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Color(0xFFFF5100),
+                          size: 44,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Level ${state.level} Scholar • ${(state.xpProgress * 100).toInt()}% towards Level ${state.level + 1}',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.subjectGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                  // Weekly checkmarks
-                  Text(
-                    'THIS WEEK\'S PROGRESS',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                      letterSpacing: 1.0,
+                    // Streak Title
+                    Text(
+                      '${state.streak} Day Study Streak!',
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color:
+                            isDark ? Colors.white : AppColors.lightTextPrimary,
+                        fontSize: 22,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(7, (index) {
-                      final dayNum = index + 1; // 1 = Monday
-                      final isToday = dayNum == currentWeekday;
-                      
-                      bool isChecked = false;
-                      if (state.streak > 0 && state.lastStreakClaimedDate.isNotEmpty) {
-                        try {
-                          final lastClaimed = DateTime.parse(state.lastStreakClaimedDate);
-                          final daysDiff = dayNum - currentWeekday;
-                          final dayDate = now.add(Duration(days: daysDiff));
-                          
-                          final dayDateNormalized = DateTime(dayDate.year, dayDate.month, dayDate.day);
-                          final lastClaimedNormalized = DateTime(lastClaimed.year, lastClaimed.month, lastClaimed.day);
-                          
-                          final diffInDays = lastClaimedNormalized.difference(dayDateNormalized).inDays;
-                          
-                          if (diffInDays >= 0 && diffInDays < state.streak) {
-                            isChecked = true;
-                          }
-                        } catch (_) {}
-                      }
+                    const SizedBox(height: 4),
+                    Text(
+                      'Level ${state.level} Scholar • ${(state.xpProgress * 100).toInt()}% towards Level ${state.level + 1}',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.subjectGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                      return Column(
-                        children: [
-                          Text(
-                            weekdays[index],
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: isToday
-                                  ? AppColors.primary
-                                  : (isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary),
-                              fontWeight:
-                                  isToday ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isChecked
-                                  ? AppColors.subjectGreen
-                                      .withValues(alpha: 0.15)
-                                  : (isToday
-                                      ? AppColors.primary.withValues(alpha: 0.1)
-                                      : Colors.transparent),
-                              border: Border.all(
-                                color: isChecked
-                                    ? AppColors.subjectGreen
-                                    : (isToday
-                                        ? AppColors.primary
-                                        : (isDark
-                                            ? AppColors.darkBorder
-                                            : AppColors.lightBorder)),
-                                width: 1.5,
+                    // Weekly checkmarks
+                    Text(
+                      'THIS WEEK\'S PROGRESS',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(7, (index) {
+                        final dayNum = index + 1; // 1 = Monday
+                        final isToday = dayNum == currentWeekday;
+
+                        bool isChecked = false;
+                        if (state.streak > 0 &&
+                            state.lastStreakClaimedDate.isNotEmpty) {
+                          try {
+                            final lastClaimed =
+                                DateTime.parse(state.lastStreakClaimedDate);
+                            final daysDiff = dayNum - currentWeekday;
+                            final dayDate = now.add(Duration(days: daysDiff));
+
+                            final dayDateNormalized = DateTime(
+                                dayDate.year, dayDate.month, dayDate.day);
+                            final lastClaimedNormalized = DateTime(
+                                lastClaimed.year,
+                                lastClaimed.month,
+                                lastClaimed.day);
+
+                            final diffInDays = lastClaimedNormalized
+                                .difference(dayDateNormalized)
+                                .inDays;
+
+                            if (diffInDays >= 0 && diffInDays < state.streak) {
+                              isChecked = true;
+                            }
+                          } catch (_) {}
+                        }
+
+                        return Column(
+                          children: [
+                            Text(
+                              weekdays[index],
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isToday
+                                    ? AppColors.primary
+                                    : (isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary),
+                                fontWeight: isToday
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
-                            child: Icon(
-                              isChecked
-                                  ? Icons.check_rounded
-                                  : (isToday ? Icons.schedule_rounded : null),
-                              color: isChecked
-                                  ? AppColors.subjectGreen
-                                  : AppColors.primary,
-                              size: 18,
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isChecked
+                                    ? AppColors.subjectGreen
+                                        .withValues(alpha: 0.15)
+                                    : (isToday
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.1)
+                                        : Colors.transparent),
+                                border: Border.all(
+                                  color: isChecked
+                                      ? AppColors.subjectGreen
+                                      : (isToday
+                                          ? AppColors.primary
+                                          : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder)),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                isChecked
+                                    ? Icons.check_rounded
+                                    : (isToday ? Icons.schedule_rounded : null),
+                                color: isChecked
+                                    ? AppColors.subjectGreen
+                                    : AppColors.primary,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Claim Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: PrimaryButton(
+                        text: todayClaimed
+                            ? 'Streak Claimed Today!'
+                            : 'Claim Today\'s Streak',
+                        isLoading: false,
+                        onPressed: () {
+                          if (todayClaimed) return;
+                          context.read<SubjectsBloc>().add(ClaimStreakEvent());
+                          AppSnackbar.show(
+                            context,
+                            type: SnackbarType.success,
+                            title: 'Streak Claimed! 🎉',
+                            message: 'Awesome job keeping it up!',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Motivational Tip Box
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkBorder.withValues(alpha: 0.3)
+                            : AppColors.lightBorder.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.lightbulb_outline_rounded,
+                            color: Colors.amber,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '“Consistent daily study beats long weekend cramming. Keep the fire burning!”',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Claim Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: PrimaryButton(
-                      text: todayClaimed
-                          ? 'Streak Claimed Today!'
-                          : 'Claim Today\'s Streak',
-                      isLoading: false,
-                      onPressed: () {
-                        if (todayClaimed) return;
-                        context.read<SubjectsBloc>().add(ClaimStreakEvent());
-                        AppSnackbar.show(
-                          context,
-                          type: SnackbarType.success,
-                          title: 'Streak Claimed! 🎉',
-                          message: 'Awesome job keeping it up!',
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Motivational Tip Box
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkBorder.withValues(alpha: 0.3)
-                          : AppColors.lightBorder.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
-                        width: 1.0,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: Colors.amber,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '“Consistent daily study beats long weekend cramming. Keep the fire burning!”',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             );
           },
@@ -365,710 +380,825 @@ class HomeDashboardPage extends StatelessWidget {
           children: [
             GradientBackground(
               child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Header
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          _getFormattedDate(),
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        ValueListenableBuilder<String?>(
-                          valueListenable: HomeDashboardPage.userNameNotifier,
-                          builder: (context, name, _) {
-                            final prefix = _getTimeBasedGreeting();
-                            if (name == null || name.isEmpty) {
-                              return Text(
-                                '$prefix 👋',
-                                style: AppTextStyles.headingMedium.copyWith(
-                                  color: isDark
-                                      ? AppColors.darkTextPrimary
-                                      : AppColors.lightTextPrimary,
-                                ),
-                              );
-                            } else if (name.length <= 9) {
-                              return Text(
-                                '$prefix, $name',
-                                style: AppTextStyles.headingMedium.copyWith(
-                                  color: isDark
-                                      ? AppColors.darkTextPrimary
-                                      : AppColors.lightTextPrimary,
-                                ),
-                              );
-                            } else {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '$prefix,',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.lightTextSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Dark/Light toggle
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.darkBorder
-                              : AppColors.lightBorder,
-                          width: 1.5,
-                        ),
-                        color: isDark
-                            ? AppColors.darkCardBg
-                            : AppColors.lightCardBg,
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          isDark
-                              ? Icons.light_mode_outlined
-                              : Icons.dark_mode_outlined,
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.lightTextPrimary,
-                        ),
-                        onPressed: () {
-                          context.read<ThemeBloc>().add(ToggleThemeEvent());
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Streak Card wrapped in BlocBuilder for real-time reactivity
-                BlocBuilder<SubjectsBloc, SubjectsState>(
-                  builder: (context, state) {
-                    return GestureDetector(
-                      onTap: () {
-                        _showStreakDetailsBottomSheet(context, isDark, state);
-                      },
-                      child: GlassCard(
-                        child: Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Flame icon container
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFFFFECE5),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFF8551)
-                                        .withValues(alpha: 0.2),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.local_fire_department_rounded,
-                                  color: Color(0xFFFF5100),
-                                  size: 32,
-                                ),
+                            Text(
+                              _getFormattedDate(),
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                                fontSize: 12,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // Streak text and progress
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${state.streak} Day Streak',
-                                    style: AppTextStyles.headingSmall.copyWith(
+                            const SizedBox(height: 4),
+                            ValueListenableBuilder<String?>(
+                              valueListenable:
+                                  HomeDashboardPage.userNameNotifier,
+                              builder: (context, name, _) {
+                                final prefix = _getTimeBasedGreeting();
+                                if (name == null || name.isEmpty) {
+                                  return Text(
+                                    '$prefix 👋',
+                                    style: AppTextStyles.headingMedium.copyWith(
                                       color: isDark
                                           ? AppColors.darkTextPrimary
                                           : AppColors.lightTextPrimary,
-                                      fontSize: 18,
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Level ${state.level} Scholar',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.subjectGreen,
-                                      fontWeight: FontWeight.bold,
+                                  );
+                                } else if (name.length <= 9) {
+                                  return Text(
+                                    '$prefix, $name',
+                                    style: AppTextStyles.headingMedium.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.lightTextPrimary,
                                     ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // XP progress indicators
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  );
+                                } else {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        'XP PROGRESS',
-                                        style:
-                                            AppTextStyles.labelSmall.copyWith(
+                                        '$prefix,',
+                                        style: TextStyle(
+                                          fontSize: 14,
                                           color: isDark
                                               ? AppColors.darkTextSecondary
                                               : AppColors.lightTextSecondary,
-                                          fontSize: 10,
                                         ),
                                       ),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        '${(state.xpProgress * 100).toInt()}%',
+                                        name,
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        // Dark/Light toggle
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              width: 1.5,
+                            ),
+                            color: isDark
+                                ? AppColors.darkCardBg
+                                : AppColors.lightCardBg,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              isDark
+                                  ? Icons.light_mode_outlined
+                                  : Icons.dark_mode_outlined,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.lightTextPrimary,
+                            ),
+                            onPressed: () {
+                              context.read<ThemeBloc>().add(ToggleThemeEvent());
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Streak Card wrapped in BlocBuilder for real-time reactivity
+                    BlocBuilder<SubjectsBloc, SubjectsState>(
+                      builder: (context, state) {
+                        return GestureDetector(
+                          onTap: () {
+                            _showStreakDetailsBottomSheet(
+                                context, isDark, state);
+                          },
+                          child: GlassCard(
+                            child: Row(
+                              children: [
+                                // Flame icon container
+                                Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFFFFECE5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF8551)
+                                            .withValues(alpha: 0.2),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.local_fire_department_rounded,
+                                      color: Color(0xFFFF5100),
+                                      size: 32,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Streak text and progress
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${state.streak} Day Streak',
                                         style:
-                                            AppTextStyles.labelSmall.copyWith(
+                                            AppTextStyles.headingSmall.copyWith(
                                           color: isDark
                                               ? AppColors.darkTextPrimary
                                               : AppColors.lightTextPrimary,
-                                          fontSize: 10,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Level ${state.level} Scholar',
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.subjectGreen,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // XP progress indicators
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'XP PROGRESS',
+                                            style: AppTextStyles.labelSmall
+                                                .copyWith(
+                                              color: isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors
+                                                      .lightTextSecondary,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${(state.xpProgress * 100).toInt()}%',
+                                            style: AppTextStyles.labelSmall
+                                                .copyWith(
+                                              color: isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : AppColors.lightTextPrimary,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: state.xpProgress,
+                                          backgroundColor: AppColors.darkBorder,
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                  Color>(AppColors.primary),
+                                          minHeight: 6,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value: state.xpProgress,
-                                      backgroundColor: AppColors.darkBorder,
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                              AppColors.primary),
-                                      minHeight: 6,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Today's Agenda header
-                Text(
-                  "Today's Agenda",
-                  style: AppTextStyles.headingSmall.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.lightTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Agenda list
-                Expanded(
-                  child: BlocBuilder<SubjectsBloc, SubjectsState>(
-                    builder: (context, state) {
-                      if (state.subjects.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.menu_book_rounded,
-                                  color: isDark ? Colors.white30 : Colors.black26,
-                                  size: 64,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No Subjects Added',
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Add your subjects first to generate a personalized daily study plan!',
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    context.read<NavigationBloc>().add(SwitchDashboardTabEvent(3));
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                                  label: const Text('Go to Subjects'),
                                 ),
                               ],
                             ),
                           ),
                         );
-                      }
-                      final items = state.agendaItems;
-                      if (items.isEmpty) {
-                        return FutureBuilder<bool>(
-                          future: context.read<SubjectsBloc>().usageLimitService.canPerformAction(UsageType.planRegenerate),
-                          builder: (context, snapshot) {
-                            final limitReached = snapshot.hasData && !snapshot.data!;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Today's Agenda header
+                    Text(
+                      "Today's Agenda",
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Agenda list
+                    Expanded(
+                      child: BlocBuilder<SubjectsBloc, SubjectsState>(
+                        builder: (context, state) {
+                          if (state.subjects.isEmpty) {
                             return Center(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                child: GlassCard(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        limitReached
-                                            ? Icons.lock_clock_rounded
-                                            : Icons.calendar_today_rounded,
-                                        color: isDark ? Colors.white30 : Colors.black26,
-                                        size: 56,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.menu_book_rounded,
+                                      color: isDark
+                                          ? Colors.white30
+                                          : Colors.black26,
+                                      size: 64,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No Subjects Added',
+                                      style:
+                                          AppTextStyles.headingSmall.copyWith(
+                                        color: isDark
+                                            ? Colors.white
+                                            : AppColors.lightTextPrimary,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        limitReached
-                                            ? 'Daily Limit Reached'
-                                            : 'No Plan Generated Yet',
-                                        style: AppTextStyles.headingSmall.copyWith(
-                                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Add your subjects first to generate a personalized daily study plan!',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        context
+                                            .read<NavigationBloc>()
+                                            .add(SwitchDashboardTabEvent(3));
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        limitReached
-                                            ? 'Daily plan limit reached — try again tomorrow.'
-                                            : 'No plan generated yet — go to Settings to create one.',
-                                        textAlign: TextAlign.center,
-                                        style: AppTextStyles.bodyMedium.copyWith(
-                                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      if (!limitReached) ...[
-                                        const SizedBox(height: 20),
-                                        ElevatedButton.icon(
-                                          onPressed: () {
-                                            context.read<NavigationBloc>().add(SwitchDashboardTabEvent(4));
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.primary,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          icon: const Icon(Icons.settings_rounded, size: 18),
-                                          label: const Text('Go to Settings'),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                                      icon: const Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 18),
+                                      label: const Text('Go to Subjects'),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
-                          },
-                        );
-                      }
-                      return ListView.separated(
-                        padding: EdgeInsets.zero,
-                        itemCount: items.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.darkCardBg
-                                  : AppColors.lightCardBg,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: item.isCompleted
-                                    ? AppColors.subjectGreen
-                                        .withValues(alpha: 0.4)
-                                    : (isDark
-                                        ? AppColors.darkBorder
-                                        : AppColors.lightBorder),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Checkbox Circle (wrapped in GestureDetector to toggle checklist state)
-                                GestureDetector(
-                                  onTap: () {
-                                    context.read<SubjectsBloc>().add(
-                                          ToggleAgendaItemEvent(item.id),
-                                        );
-                                  },
+                          }
+                          final items = state.agendaItems;
+                          if (items.isEmpty) {
+                            return FutureBuilder<bool>(
+                              future: context
+                                  .read<SubjectsBloc>()
+                                  .usageLimitService
+                                  .canPerformAction(UsageType.planRegenerate),
+                              builder: (context, snapshot) {
+                                final limitReached =
+                                    snapshot.hasData && !snapshot.data!;
+                                return Center(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Icon(
-                                      item.isCompleted
-                                          ? Icons.check_circle_rounded
-                                          : Icons
-                                              .radio_button_unchecked_rounded,
-                                      color: item.isCompleted
-                                          ? AppColors.subjectGreen
-                                          : (isDark
-                                              ? AppColors.darkTextSecondary
-                                              : AppColors.lightTextSecondary),
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                                // Rest of Card Details (wrapped in GestureDetector to launch Custom Duration Timer)
-                                Expanded(
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: item.isCompleted
-                                        ? null
-                                        : () {
-                                            context.read<TimerBloc>().add(
-                                                  StartTimerEvent(
-                                                    taskId: item.id,
-                                                    durationSeconds:
-                                                        item.durationMinutes *
-                                                            60,
-                                                    taskTitle: item.title,
-                                                    subjectName: item.tag,
-                                                    subjectColor: item.tagColor,
-                                                  ),
-                                                );
-                                            // 2. Transition screen navigation
-                                            context.read<NavigationBloc>().add(
-                                                  NavigateToScreenEvent(
-                                                      AppScreen.focusTimer),
-                                                );
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 16.0, bottom: 16.0, right: 16.0),
-                                      child: Row(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0),
+                                    child: GlassCard(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  item.title,
-                                                  style: AppTextStyles
-                                                      .bodyMedium
-                                                      .copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: item.isCompleted
-                                                        ? (isDark
-                                                            ? AppColors
-                                                                .darkTextSecondary
-                                                                .withValues(
-                                                                    alpha: 0.6)
-                                                            : AppColors
-                                                                .lightTextSecondary
-                                                                .withValues(
-                                                                    alpha: 0.6))
-                                                        : (isDark
-                                                            ? AppColors
-                                                                .darkTextPrimary
-                                                            : AppColors
-                                                                .lightTextPrimary),
-                                                    decoration: item.isCompleted
-                                                        ? TextDecoration
-                                                            .lineThrough
-                                                        : null,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Row(
-                                                  children: [
-                                                    (() {
-                                                      final matchedSubject = state.subjects.firstWhere(
-                                                        (s) => s.name.toLowerCase() == item.tag.toLowerCase(),
-                                                        orElse: () => Subject(id: '', name: '', color: Colors.transparent),
-                                                      );
-                                                      bool showRedChip = false;
-                                                      if (matchedSubject.id.isNotEmpty && matchedSubject.examDate != null) {
-                                                        final today = DateTime(
-                                                          DateTime.now().year,
-                                                          DateTime.now().month,
-                                                          DateTime.now().day,
-                                                        );
-                                                        final examDay = DateTime(
-                                                          matchedSubject.examDate!.year,
-                                                          matchedSubject.examDate!.month,
-                                                          matchedSubject.examDate!.day,
-                                                        );
-                                                        final daysUntilExam = examDay.difference(today).inDays;
-                                                        if (daysUntilExam <= 7) {
-                                                          showRedChip = true;
-                                                        }
-                                                      }
-                                                      final displayColor = showRedChip ? const Color(0xFFFF4D6A) : item.tagColor;
-                                                      return Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 2,
-                                                        ),
-                                                        decoration: BoxDecoration(
-                                                          color: displayColor.withValues(alpha: 0.12),
-                                                          borderRadius: BorderRadius.circular(6),
-                                                        ),
-                                                        child: Text(
-                                                          item.tag,
-                                                          style: AppTextStyles.bodySmall.copyWith(
-                                                            color: displayColor,
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 10,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    })(),
-                                                    const SizedBox(width: 12),
-                                                    Icon(
-                                                      Icons.schedule_rounded,
-                                                      size: 14,
-                                                      color: isDark
-                                                          ? AppColors
-                                                              .darkTextSecondary
-                                                          : AppColors
-                                                              .lightTextSecondary,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      '${item.durationMinutes} min',
-                                                      style: AppTextStyles
-                                                          .bodySmall
-                                                          .copyWith(
-                                                        color: isDark
-                                                            ? AppColors
-                                                                .darkTextSecondary
-                                                            : AppColors
-                                                                .lightTextSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
+                                          Icon(
+                                            limitReached
+                                                ? Icons.lock_clock_rounded
+                                                : Icons.calendar_today_rounded,
+                                            color: isDark
+                                                ? Colors.white30
+                                                : Colors.black26,
+                                            size: 56,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            limitReached
+                                                ? 'Daily Limit Reached'
+                                                : 'No Plan Generated Yet',
+                                            style: AppTextStyles.headingSmall
+                                                .copyWith(
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : AppColors.lightTextPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
                                             ),
                                           ),
-                                          if (!item.isCompleted)
-                                            Icon(
-                                              Icons.chevron_right_rounded,
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            limitReached
+                                                ? 'Daily plan limit reached — try again tomorrow.'
+                                                : 'No plan generated yet — go to Settings to create one.',
+                                            textAlign: TextAlign.center,
+                                            style: AppTextStyles.bodyMedium
+                                                .copyWith(
                                               color: isDark
                                                   ? AppColors.darkTextSecondary
                                                   : AppColors
                                                       .lightTextSecondary,
+                                              fontSize: 14,
                                             ),
+                                          ),
+                                          if (!limitReached) ...[
+                                            const SizedBox(height: 20),
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                context
+                                                    .read<NavigationBloc>()
+                                                    .add(
+                                                        SwitchDashboardTabEvent(
+                                                            4));
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColors.primary,
+                                                foregroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 20,
+                                                        vertical: 12),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              icon: const Icon(
+                                                  Icons.settings_rounded,
+                                                  size: 18),
+                                              label:
+                                                  const Text('Go to Settings'),
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                          return ListView.separated(
+                            padding: EdgeInsets.zero,
+                            itemCount: items.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.darkCardBg
+                                      : AppColors.lightCardBg,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: item.isCompleted
+                                        ? AppColors.subjectGreen
+                                            .withValues(alpha: 0.4)
+                                        : (isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Checkbox Circle (wrapped in GestureDetector to toggle checklist state)
+                                    GestureDetector(
+                                      onTap: () {
+                                        context.read<SubjectsBloc>().add(
+                                              ToggleAgendaItemEvent(item.id),
+                                            );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Icon(
+                                          item.isCompleted
+                                              ? Icons.check_circle_rounded
+                                              : Icons
+                                                  .radio_button_unchecked_rounded,
+                                          color: item.isCompleted
+                                              ? AppColors.subjectGreen
+                                              : (isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors
+                                                      .lightTextSecondary),
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                    // Rest of Card Details (wrapped in GestureDetector to launch Custom Duration Timer)
+                                    Expanded(
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: item.isCompleted
+                                            ? null
+                                            : () {
+                                                context.read<TimerBloc>().add(
+                                                      StartTimerEvent(
+                                                        taskId: item.id,
+                                                        durationSeconds:
+                                                            item.durationMinutes *
+                                                                60,
+                                                        taskTitle: item.title,
+                                                        subjectName: item.tag,
+                                                        subjectColor:
+                                                            item.tagColor,
+                                                      ),
+                                                    );
+                                                // 2. Transition screen navigation
+                                                context
+                                                    .read<NavigationBloc>()
+                                                    .add(
+                                                      NavigateToScreenEvent(
+                                                          AppScreen.focusTimer),
+                                                    );
+                                              },
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              top: 16.0,
+                                              bottom: 16.0,
+                                              right: 16.0),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.title,
+                                                      style: AppTextStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: item.isCompleted
+                                                            ? (isDark
+                                                                ? AppColors
+                                                                    .darkTextSecondary
+                                                                    .withValues(
+                                                                        alpha:
+                                                                            0.6)
+                                                                : AppColors
+                                                                    .lightTextSecondary
+                                                                    .withValues(
+                                                                        alpha:
+                                                                            0.6))
+                                                            : (isDark
+                                                                ? AppColors
+                                                                    .darkTextPrimary
+                                                                : AppColors
+                                                                    .lightTextPrimary),
+                                                        decoration:
+                                                            item.isCompleted
+                                                                ? TextDecoration
+                                                                    .lineThrough
+                                                                : null,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
+                                                        (() {
+                                                          final matchedSubject =
+                                                              state.subjects
+                                                                  .firstWhere(
+                                                            (s) =>
+                                                                s.name
+                                                                    .toLowerCase() ==
+                                                                item.tag
+                                                                    .toLowerCase(),
+                                                            orElse: () => Subject(
+                                                                id: '',
+                                                                name: '',
+                                                                color: Colors
+                                                                    .transparent),
+                                                          );
+                                                          bool showRedChip =
+                                                              false;
+                                                          if (matchedSubject.id
+                                                                  .isNotEmpty &&
+                                                              matchedSubject
+                                                                      .examDate !=
+                                                                  null) {
+                                                            final today =
+                                                                DateTime(
+                                                              DateTime.now()
+                                                                  .year,
+                                                              DateTime.now()
+                                                                  .month,
+                                                              DateTime.now()
+                                                                  .day,
+                                                            );
+                                                            final examDay =
+                                                                DateTime(
+                                                              matchedSubject
+                                                                  .examDate!
+                                                                  .year,
+                                                              matchedSubject
+                                                                  .examDate!
+                                                                  .month,
+                                                              matchedSubject
+                                                                  .examDate!
+                                                                  .day,
+                                                            );
+                                                            final daysUntilExam =
+                                                                examDay
+                                                                    .difference(
+                                                                        today)
+                                                                    .inDays;
+                                                            if (daysUntilExam <=
+                                                                7) {
+                                                              showRedChip =
+                                                                  true;
+                                                            }
+                                                          }
+                                                          final displayColor =
+                                                              showRedChip
+                                                                  ? const Color(
+                                                                      0xFFFF4D6A)
+                                                                  : item
+                                                                      .tagColor;
+                                                          return Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 2,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: displayColor
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.12),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          6),
+                                                            ),
+                                                            child: Text(
+                                                              item.tag,
+                                                              style:
+                                                                  AppTextStyles
+                                                                      .bodySmall
+                                                                      .copyWith(
+                                                                color:
+                                                                    displayColor,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 10,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        })(),
+                                                        const SizedBox(
+                                                            width: 12),
+                                                        Icon(
+                                                          Icons
+                                                              .schedule_rounded,
+                                                          size: 14,
+                                                          color: isDark
+                                                              ? AppColors
+                                                                  .darkTextSecondary
+                                                              : AppColors
+                                                                  .lightTextSecondary,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 4),
+                                                        Text(
+                                                          '${item.durationMinutes} min',
+                                                          style: AppTextStyles
+                                                              .bodySmall
+                                                              .copyWith(
+                                                            color: isDark
+                                                                ? AppColors
+                                                                    .darkTextSecondary
+                                                                : AppColors
+                                                                    .lightTextSecondary,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              if (!item.isCompleted)
+                                                Icon(
+                                                  Icons.chevron_right_rounded,
+                                                  color: isDark
+                                                      ? AppColors
+                                                          .darkTextSecondary
+                                                      : AppColors
+                                                          .lightTextSecondary,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Quick Start Session Button
+                    BlocBuilder<SubjectsBloc, SubjectsState>(
+                      builder: (context, state) {
+                        final uncompletedItems = state.agendaItems
+                            .where((item) => !item.isCompleted)
+                            .toList();
+
+                        final allCompleted = state.agendaItems.isNotEmpty &&
+                            uncompletedItems.isEmpty;
+
+                        if (allCompleted) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.subjectGreen.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.subjectGreen
+                                    .withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.subjectGreen,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'All done for today! Great work 🎉',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.subjectGreen,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
                           );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
+                        }
 
-                // Quick Start Session Button
-                BlocBuilder<SubjectsBloc, SubjectsState>(
-                  builder: (context, state) {
-                    final uncompletedItems = state.agendaItems
-                        .where((item) => !item.isCompleted)
-                        .toList();
+                        int focusMinutes = 25;
+                        if (uncompletedItems.isNotEmpty) {
+                          focusMinutes = uncompletedItems.first.durationMinutes;
+                        } else if (state.agendaItems.isNotEmpty) {
+                          focusMinutes =
+                              state.agendaItems.first.durationMinutes;
+                        } else {
+                          focusMinutes = state.settings.pomodoroFocus;
+                        }
 
-                    final allCompleted = state.agendaItems.isNotEmpty &&
-                        uncompletedItems.isEmpty;
+                        final activeItem = uncompletedItems.isNotEmpty
+                            ? uncompletedItems.first
+                            : (state.agendaItems.isNotEmpty
+                                ? state.agendaItems.first
+                                : null);
 
-                    if (allCompleted) {
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.subjectGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                AppColors.subjectGreen.withValues(alpha: 0.3),
-                            width: 1.5,
+                        final showDivider = state.agendaItems.isEmpty;
+
+                        final button = PrimaryButton(
+                          text: 'Quick Start Session ($focusMinutes min)',
+                          icon: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 24,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                                Icons.check_circle_rounded,
-                                color: AppColors.subjectGreen,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'All done for today! Great work 🎉',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.subjectGreen,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      int focusMinutes = 25;
-                      if (uncompletedItems.isNotEmpty) {
-                        focusMinutes = uncompletedItems.first.durationMinutes;
-                      } else if (state.agendaItems.isNotEmpty) {
-                        focusMinutes = state.agendaItems.first.durationMinutes;
-                      } else {
-                        focusMinutes = state.settings.pomodoroFocus;
-                      }
-
-                      final activeItem = uncompletedItems.isNotEmpty
-                          ? uncompletedItems.first
-                          : (state.agendaItems.isNotEmpty
-                              ? state.agendaItems.first
-                              : null);
-
-                      final showDivider = state.agendaItems.isEmpty;
-
-                      final button = PrimaryButton(
-                        text: 'Quick Start Session ($focusMinutes min)',
-                        icon: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          context.read<TimerBloc>().add(
-                                StartTimerEvent(
-                                  taskId: activeItem?.id,
-                                  durationSeconds: focusMinutes * 60,
-                                  taskTitle: activeItem?.title,
-                                  subjectName: activeItem?.tag,
-                                  subjectColor: activeItem?.tagColor,
-                                ),
-                              );
-                          // Navigate to Focus Timer Page
-                          context.read<NavigationBloc>().add(
-                                NavigateToScreenEvent(AppScreen.focusTimer),
-                              );
-                        },
-                      );
-
-                      if (showDivider) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Divider(
-                                    color: isDark
-                                        ? AppColors.darkBorder
-                                        : AppColors.lightBorder,
-                                    thickness: 1.2,
+                          onPressed: () {
+                            context.read<TimerBloc>().add(
+                                  StartTimerEvent(
+                                    taskId: activeItem?.id,
+                                    durationSeconds: focusMinutes * 60,
+                                    taskTitle: activeItem?.title,
+                                    subjectName: activeItem?.tag,
+                                    subjectColor: activeItem?.tagColor,
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text(
-                                    'Or start a quick session without a plan',
-                                    style: AppTextStyles.bodySmall.copyWith(
+                                );
+                            // Navigate to Focus Timer Page
+                            context.read<NavigationBloc>().add(
+                                  NavigateToScreenEvent(AppScreen.focusTimer),
+                                );
+                          },
+                        );
+
+                        if (showDivider) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
                                       color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.lightTextSecondary,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
+                                          ? AppColors.darkBorder
+                                          : AppColors.lightBorder,
+                                      thickness: 1.2,
                                     ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: Divider(
-                                    color: isDark
-                                        ? AppColors.darkBorder
-                                        : AppColors.lightBorder,
-                                    thickness: 1.2,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text(
+                                      'Or start a quick session without a plan',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            button,
-                          ],
-                        );
-                      }
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.lightBorder,
+                                      thickness: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              button,
+                            ],
+                          );
+                        }
 
-                      return button;
-                    },
-                  ),
-                const SizedBox(height: 10),
-              ],
+                        return button;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
             ),
-          ),
+            ValueListenableBuilder<int?>(
+              valueListenable: HomeDashboardPage.levelUpNotifier,
+              builder: (context, level, _) {
+                if (level == null) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: LevelUpOverlay(level: level),
+                );
+              },
+            ),
+          ],
         ),
-        ValueListenableBuilder<int?>(
-          valueListenable: HomeDashboardPage.levelUpNotifier,
-          builder: (context, level, _) {
-            if (level == null) return const SizedBox.shrink();
-            return Positioned.fill(
-              child: LevelUpOverlay(level: level),
-            );
-          },
-        ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
   }
 }
 
