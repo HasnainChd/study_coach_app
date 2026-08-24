@@ -61,7 +61,8 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       debugPrint('[NotificationService] Resolved timezone name: $timeZoneName');
     } catch (e, stackTrace) {
-      debugPrint('[NotificationService] Failed to get local timezone, defaulting to UTC: $e\n$stackTrace');
+      debugPrint(
+          '[NotificationService] Failed to get local timezone, defaulting to UTC: $e\n$stackTrace');
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -74,7 +75,8 @@ class NotificationService {
       requestSoundPermission: false,
     );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
       macOS: initializationSettingsDarwin,
@@ -120,8 +122,8 @@ class NotificationService {
   Future<bool> hasPermission() async {
     debugPrint('[NotificationService] hasPermission: start');
 
-    final androidPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final androidPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       final rawEnabled = await androidPlugin.areNotificationsEnabled();
@@ -159,8 +161,8 @@ class NotificationService {
       return true;
     }
 
-    final iosPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final iosPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
     if (iosPlugin != null) {
       final permissions = await iosPlugin.checkPermissions();
@@ -174,8 +176,8 @@ class NotificationService {
       return granted;
     }
 
-    final macosPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final macosPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             MacOSFlutterLocalNotificationsPlugin>();
     if (macosPlugin != null) {
       final permissions = await macosPlugin.checkPermissions();
@@ -198,8 +200,8 @@ class NotificationService {
   Future<void> requestPermissions() async {
     debugPrint('[NotificationService] requestPermissions: start');
 
-    final iosPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final iosPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
     if (iosPlugin != null) {
       await iosPlugin.requestPermissions(
@@ -211,8 +213,8 @@ class NotificationService {
       return;
     }
 
-    final macosPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final macosPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             MacOSFlutterLocalNotificationsPlugin>();
     if (macosPlugin != null) {
       await macosPlugin.requestPermissions(
@@ -224,8 +226,8 @@ class NotificationService {
       return;
     }
 
-    final androidPlugin = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final androidPlugin =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       final result = await androidPlugin.requestNotificationsPermission();
@@ -264,10 +266,13 @@ class NotificationService {
   Future<void> _clearCache() async {
     if (!Platform.isAndroid) return;
     try {
-      await _androidPermissionChannel.invokeMethod('clearScheduledNotificationsCache');
-      debugPrint('[NotificationService] Cache cleared successfully via MethodChannel.');
+      await _androidPermissionChannel
+          .invokeMethod('clearScheduledNotificationsCache');
+      debugPrint(
+          '[NotificationService] Cache cleared successfully via MethodChannel.');
     } catch (e, stackTrace) {
-      debugPrint('[NotificationService] Failed to clear cache: $e\n$stackTrace');
+      debugPrint(
+          '[NotificationService] Failed to clear cache: $e\n$stackTrace');
     }
   }
 
@@ -276,7 +281,8 @@ class NotificationService {
       await flutterLocalNotificationsPlugin.cancel(id);
     } on PlatformException catch (e) {
       if (e.message?.contains('Missing type parameter') == true) {
-        debugPrint('[NotificationService] Gson TypeToken/R8 error on cancel. Clearing cache...');
+        debugPrint(
+            '[NotificationService] Gson TypeToken/R8 error on cancel. Clearing cache...');
         await _clearCache();
         await flutterLocalNotificationsPlugin.cancel(id);
       } else {
@@ -306,7 +312,8 @@ class NotificationService {
       );
     } on PlatformException catch (e) {
       if (e.message?.contains('Missing type parameter') == true) {
-        debugPrint('[NotificationService] Gson TypeToken/R8 error on zonedSchedule. Clearing cache...');
+        debugPrint(
+            '[NotificationService] Gson TypeToken/R8 error on zonedSchedule. Clearing cache...');
         await _clearCache();
         await flutterLocalNotificationsPlugin.zonedSchedule(
           id,
@@ -341,12 +348,15 @@ class NotificationService {
 
   Future<List<PendingNotificationRequest>> pendingNotifications() async {
     try {
-      return await flutterLocalNotificationsPlugin.pendingNotificationRequests();
+      return await flutterLocalNotificationsPlugin
+          .pendingNotificationRequests();
     } on PlatformException catch (e) {
       if (e.message?.contains('Missing type parameter') == true) {
-        debugPrint('[NotificationService] Gson TypeToken/R8 error on pendingNotificationRequests. Clearing cache...');
+        debugPrint(
+            '[NotificationService] Gson TypeToken/R8 error on pendingNotificationRequests. Clearing cache...');
         await _clearCache();
-        return await flutterLocalNotificationsPlugin.pendingNotificationRequests();
+        return await flutterLocalNotificationsPlugin
+            .pendingNotificationRequests();
       } else {
         rethrow;
       }
@@ -422,7 +432,6 @@ class NotificationService {
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
-
 
   Future<void> scheduleDailyReminder({
     required String preferredTime,

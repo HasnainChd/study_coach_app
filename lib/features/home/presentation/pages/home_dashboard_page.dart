@@ -20,6 +20,7 @@ class HomeDashboardPage extends StatelessWidget {
   static final ValueNotifier<String?> userNameNotifier =
       ValueNotifier<String?>(null);
   static final ValueNotifier<int?> levelUpNotifier = ValueNotifier<int?>(null);
+  //static final ValueNotifier<int?> levelUpNotifier = ValueNotifier<int?>(null);
   static int? _lastLevel;
 
   static void loadName() {
@@ -90,68 +91,72 @@ class HomeDashboardPage extends StatelessWidget {
           bloc: context.read<SubjectsBloc>(),
           builder: (context, state) {
             final todayClaimed = state.lastStreakClaimedDate == today;
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF151433) : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  width: 1.5,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Pull Handle
-                  Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+            return SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF151433) : Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Flame Icon
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFFFECE5),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_fire_department_rounded,
-                        color: Color(0xFFFF5100),
-                        size: 44,
+                  border: Border.all(
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    width: 1.5,
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Pull Handle
+                    Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                  // Streak Title
-                  Text(
-                    '${state.streak} Day Study Streak!',
-                    style: AppTextStyles.headingSmall.copyWith(
-                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                      fontSize: 22,
+                    // Flame Icon
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFFFECE5),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Color(0xFFFF5100),
+                          size: 44,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Level ${state.level} Scholar • ${(state.xpProgress * 100).toInt()}% towards Level ${state.level + 1}',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.subjectGreen,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 16),
+
+                    // Streak Title
+                    Text(
+                      '${state.streak} Day Study Streak!',
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color:
+                            isDark ? Colors.white : AppColors.lightTextPrimary,
+                        fontSize: 22,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Level ${state.level} Scholar • ${(state.xpProgress * 100).toInt()}% towards Level ${state.level + 1}',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.subjectGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
                   // Weekly checkmarks
                   Text(
@@ -196,122 +201,125 @@ class HomeDashboardPage extends StatelessWidget {
                         } catch (_) {}
                       }
 
-                      return Column(
-                        children: [
-                          Text(
-                            weekdays[index],
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: isToday
-                                  ? AppColors.primary
-                                  : (isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary),
-                              fontWeight:
-                                  isToday ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isChecked
-                                  ? AppColors.subjectGreen
-                                      .withValues(alpha: 0.15)
-                                  : (isToday
-                                      ? AppColors.primary.withValues(alpha: 0.1)
-                                      : Colors.transparent),
-                              border: Border.all(
-                                color: isChecked
-                                    ? AppColors.subjectGreen
-                                    : (isToday
-                                        ? AppColors.primary
-                                        : (isDark
-                                            ? AppColors.darkBorder
-                                            : AppColors.lightBorder)),
-                                width: 1.5,
+                        return Column(
+                          children: [
+                            Text(
+                              weekdays[index],
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isToday
+                                    ? AppColors.primary
+                                    : (isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary),
+                                fontWeight: isToday
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
-                            child: Icon(
-                              isChecked
-                                  ? Icons.check_rounded
-                                  : (isToday ? Icons.schedule_rounded : null),
-                              color: isChecked
-                                  ? AppColors.subjectGreen
-                                  : AppColors.primary,
-                              size: 18,
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isChecked
+                                    ? AppColors.subjectGreen
+                                        .withValues(alpha: 0.15)
+                                    : (isToday
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.1)
+                                        : Colors.transparent),
+                                border: Border.all(
+                                  color: isChecked
+                                      ? AppColors.subjectGreen
+                                      : (isToday
+                                          ? AppColors.primary
+                                          : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder)),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                isChecked
+                                    ? Icons.check_rounded
+                                    : (isToday ? Icons.schedule_rounded : null),
+                                color: isChecked
+                                    ? AppColors.subjectGreen
+                                    : AppColors.primary,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Claim Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: PrimaryButton(
+                        text: todayClaimed
+                            ? 'Streak Claimed Today!'
+                            : 'Claim Today\'s Streak',
+                        isLoading: false,
+                        onPressed: () {
+                          if (todayClaimed) return;
+                          context.read<SubjectsBloc>().add(ClaimStreakEvent());
+                          AppSnackbar.show(
+                            context,
+                            type: SnackbarType.success,
+                            title: 'Streak Claimed! 🎉',
+                            message: 'Awesome job keeping it up!',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Motivational Tip Box
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkBorder.withValues(alpha: 0.3)
+                            : AppColors.lightBorder.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.lightbulb_outline_rounded,
+                            color: Colors.amber,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '“Consistent daily study beats long weekend cramming. Keep the fire burning!”',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Claim Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: PrimaryButton(
-                      text: todayClaimed
-                          ? 'Streak Claimed Today!'
-                          : 'Claim Today\'s Streak',
-                      isLoading: false,
-                      onPressed: () {
-                        if (todayClaimed) return;
-                        context.read<SubjectsBloc>().add(ClaimStreakEvent());
-                        AppSnackbar.show(
-                          context,
-                          type: SnackbarType.success,
-                          title: 'Streak Claimed! 🎉',
-                          message: 'Awesome job keeping it up!',
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Motivational Tip Box
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkBorder.withValues(alpha: 0.3)
-                          : AppColors.lightBorder.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
-                        width: 1.0,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: Colors.amber,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '“Consistent daily study beats long weekend cramming. Keep the fire burning!”',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             );
           },
@@ -1081,10 +1089,53 @@ class HomeDashboardPage extends StatelessWidget {
                         final uncompletedItems = state.agendaItems
                             .where((item) => !item.isCompleted)
                             .toList();
+                    // Quick Start Session Button
+                    BlocBuilder<SubjectsBloc, SubjectsState>(
+                      builder: (context, state) {
+                        final uncompletedItems = state.agendaItems
+                            .where((item) => !item.isCompleted)
+                            .toList();
 
                         final allCompleted = state.agendaItems.isNotEmpty &&
                             uncompletedItems.isEmpty;
+                        final allCompleted = state.agendaItems.isNotEmpty &&
+                            uncompletedItems.isEmpty;
 
+                        if (allCompleted) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.subjectGreen.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.subjectGreen
+                                    .withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.subjectGreen,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'All done for today! Great work 🎉',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.subjectGreen,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
                         if (allCompleted) {
                           return Container(
                             width: double.infinity,
@@ -1130,7 +1181,21 @@ class HomeDashboardPage extends StatelessWidget {
                         } else {
                           focusMinutes = state.settings.pomodoroFocus;
                         }
+                        int focusMinutes = 25;
+                        if (uncompletedItems.isNotEmpty) {
+                          focusMinutes = uncompletedItems.first.durationMinutes;
+                        } else if (state.agendaItems.isNotEmpty) {
+                          focusMinutes =
+                              state.agendaItems.first.durationMinutes;
+                        } else {
+                          focusMinutes = state.settings.pomodoroFocus;
+                        }
 
+                        final activeItem = uncompletedItems.isNotEmpty
+                            ? uncompletedItems.first
+                            : (state.agendaItems.isNotEmpty
+                                ? state.agendaItems.first
+                                : null);
                         final activeItem = uncompletedItems.isNotEmpty
                             ? uncompletedItems.first
                             : (state.agendaItems.isNotEmpty
@@ -1138,7 +1203,31 @@ class HomeDashboardPage extends StatelessWidget {
                                 : null);
 
                         final showDivider = state.agendaItems.isEmpty;
+                        final showDivider = state.agendaItems.isEmpty;
 
+                        final button = PrimaryButton(
+                          text: 'Quick Start Session ($focusMinutes min)',
+                          icon: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            context.read<TimerBloc>().add(
+                                  StartTimerEvent(
+                                    taskId: activeItem?.id,
+                                    durationSeconds: focusMinutes * 60,
+                                    taskTitle: activeItem?.title,
+                                    subjectName: activeItem?.tag,
+                                    subjectColor: activeItem?.tagColor,
+                                  ),
+                                );
+                            // Navigate to Focus Timer Page
+                            context.read<NavigationBloc>().add(
+                                  NavigateToScreenEvent(AppScreen.focusTimer),
+                                );
+                          },
+                        );
                         final button = PrimaryButton(
                           text: 'Quick Start Session ($focusMinutes min)',
                           icon: const Icon(
@@ -1206,6 +1295,49 @@ class HomeDashboardPage extends StatelessWidget {
                             ],
                           );
                         }
+                        if (showDivider) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.lightBorder,
+                                      thickness: 1.2,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text(
+                                      'Or start a quick session without a plan',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.lightBorder,
+                                      thickness: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              button,
+                            ],
+                          );
+                        }
 
                         return button;
                       },
@@ -1218,6 +1350,27 @@ class HomeDashboardPage extends StatelessWidget {
             ValueListenableBuilder<int?>(
               valueListenable: HomeDashboardPage.levelUpNotifier,
               builder: (context, level, _) {
+                if (level == null) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: LevelUpOverlay(level: level),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+                        return button;
+                      },
+                    ),
+                    const SizedBox(height = 10),
+                  ],
+                ),
+              ),
+            ),
+            ValueListenableBuilder<int?>(
+              valueListenable = HomeDashboardPage.levelUpNotifier,
+              builder = (context, level, _) {
                 if (level == null) return const SizedBox.shrink();
                 return Positioned.fill(
                   child: LevelUpOverlay(level: level),
