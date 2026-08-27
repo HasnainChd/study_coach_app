@@ -9,6 +9,7 @@ import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/secondary_button.dart';
 import '../../../bloc/navigation_bloc.dart';
+import '../../../subjects/domain/entities/subject.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_event.dart';
 import '../../../subjects/presentation/bloc/subjects_state.dart';
@@ -21,6 +22,26 @@ class AddSubjectsPage extends StatefulWidget {
 }
 
 class _AddSubjectsPageState extends State<AddSubjectsPage> {
+  static const List<String> _presetSubjects = [
+    'Math',
+    'Science',
+    'English',
+    'History',
+    'Biology',
+    'Chemistry',
+    'Computer Science',
+  ];
+
+  Color _getUniqueSubjectColor(List<Subject> currentSubjects, int defaultIndex) {
+    final usedColors = currentSubjects.map((s) => s.color.value).toSet();
+    for (final color in AppColors.subjectColors) {
+      if (!usedColors.contains(color.value)) {
+        return color;
+      }
+    }
+    return AppColors.getSubjectColorByIndex(defaultIndex);
+  }
+
   final TextEditingController _nameController = TextEditingController();
   int _selectedColorIndex = 1; // Default select purple (index 1)
   DateTime? _selectedDate;
@@ -213,6 +234,138 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Quick Add Presets Section
+                      Text(
+                        'QUICK ADD PRESETS',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      BlocBuilder<SubjectsBloc, SubjectsState>(
+                        builder: (context, state) {
+                          final existingNames = state.subjects
+                              .map((s) => s.name.trim().toLowerCase())
+                              .toSet();
+
+                          return Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            children: _presetSubjects.map((presetName) {
+                              final isAdded = existingNames
+                                  .contains(presetName.toLowerCase());
+                              final presetIndex =
+                                  _presetSubjects.indexOf(presetName);
+                              final chipColor = _getUniqueSubjectColor(
+                                  state.subjects, presetIndex);
+
+                              return InkWell(
+                                onTap: isAdded
+                                    ? null
+                                    : () {
+                                        context.read<SubjectsBloc>().add(
+                                              AddSubjectEvent(
+                                                name: presetName,
+                                                color: chipColor,
+                                              ),
+                                            );
+                                        AppSnackbar.show(
+                                          context,
+                                          type: SnackbarType.success,
+                                          title: 'Subject Added',
+                                          message:
+                                              '$presetName has been added to your plan.',
+                                        );
+                                      },
+                                borderRadius: BorderRadius.circular(20),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isAdded
+                                        ? (isDark
+                                            ? Colors.white.withValues(alpha: 0.06)
+                                            : Colors.black.withValues(alpha: 0.05))
+                                        : (isDark
+                                            ? AppColors.darkCardBg
+                                            : AppColors.lightCardBg),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isAdded
+                                          ? (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder)
+                                          : chipColor.withValues(alpha: 0.7),
+                                      width: isAdded ? 1.0 : 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: isAdded
+                                              ? (isDark
+                                                  ? Colors.grey
+                                                  : Colors.grey.shade400)
+                                              : chipColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        presetName,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: isAdded
+                                              ? FontWeight.w400
+                                              : FontWeight.w600,
+                                          color: isAdded
+                                              ? (isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors.lightTextSecondary)
+                                              : (isDark
+                                                  ? AppColors.darkTextPrimary
+                                                  : AppColors.lightTextPrimary),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        isAdded
+                                            ? Icons.check_rounded
+                                            : Icons.add_rounded,
+                                        size: 14,
+                                        color: isAdded
+                                            ? AppColors.subjectGreen
+                                            : (isDark
+                                                ? AppColors.primaryLight
+                                                : AppColors.primary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'OR CUSTOM SUBJECT',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       // Input Card
                       GlassCard(
                         padding: const EdgeInsets.all(16.0),

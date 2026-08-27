@@ -16,17 +16,16 @@ class WelcomePage extends StatelessWidget {
   static final _nameController = TextEditingController();
 
   Future<void> _handleGetStarted(BuildContext context) async {
-    if (_formKey.currentState?.validate() ?? false) {
-      final name = _nameController.text.trim();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userName', name);
-      HomeDashboardPage.userNameNotifier.value = name;
+    final inputName = _nameController.text.trim();
+    final name = inputName.isEmpty ? 'Student' : inputName;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', name);
+    HomeDashboardPage.userNameNotifier.value = name;
 
-      if (context.mounted) {
-        context.read<NavigationBloc>().add(
-              NavigateToScreenEvent(AppScreen.addSubjects),
-            );
-      }
+    if (context.mounted) {
+      context.read<NavigationBloc>().add(
+            NavigateToScreenEvent(AppScreen.addSubjects),
+          );
     }
   }
 
@@ -145,12 +144,6 @@ class WelcomePage extends StatelessWidget {
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: isDark ? Colors.white : AppColors.lightTextPrimary,
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Please enter your name';
-                                    }
-                                    return null;
-                                  },
                                   decoration: InputDecoration(
                                     hintText: 'Enter your name',
                                     hintStyle: AppTextStyles.bodyMedium.copyWith(
