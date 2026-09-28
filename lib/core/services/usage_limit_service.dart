@@ -61,4 +61,10 @@ class UsageLimitService {
     final remaining = type.limit - count;
     return remaining < 0 ? 0 : remaining;
   }
+
+  Future<void> resetCount(UsageType type) async {
+    final today = _getTodayString();
+    await _box.put(_dateKey(type), today);
+    await _box.put(_countKey(type), 0);
+  }
 }

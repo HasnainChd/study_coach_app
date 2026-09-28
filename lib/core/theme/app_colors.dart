@@ -57,4 +57,17 @@ class AppColors {
   static Color getSubjectColorByIndex(int index) {
     return subjectColors[index % subjectColors.length];
   }
+
+  static Color getPrimaryColor(String? activeThemeId) {
+    switch (activeThemeId) {
+      case 'theme_midnight_neon':
+        return const Color(0xFF00E5FF); // Neon Cyan / Electric Blue
+      case 'theme_emerald_synth':
+        return const Color(0xFF00D180); // Emerald Green
+      case 'theme_sunset_amber':
+        return const Color(0xFFFF8C00); // Sunset Amber
+      default:
+        return primary; // Built-in default Purple (0xFF8F67F6)
+    }
+  }
 }

@@ -2,15 +2,32 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static Color getPrimaryColor(String? activeThemeId) {
+    return AppColors.getPrimaryColor(activeThemeId);
+  }
+
+  static Color getSecondaryColor(String? activeThemeId, bool isDark) {
+    final primary = getPrimaryColor(activeThemeId);
+    if (activeThemeId == null) {
+      return isDark ? AppColors.primaryLight : AppColors.primaryDark;
+    }
+    return HSLColor.fromColor(primary)
+        .withLightness(isDark ? 0.70 : 0.40)
+        .toColor();
+  }
+
+  static ThemeData getDarkTheme([String? activeThemeId]) {
+    final primary = getPrimaryColor(activeThemeId);
+    final secondary = getSecondaryColor(activeThemeId, true);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBgStart,
-      primaryColor: AppColors.primary,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.primaryLight,
+      primaryColor: primary,
+      colorScheme: ColorScheme.dark(
+        primary: primary,
+        secondary: secondary,
         surface: AppColors.darkCardBg,
         onSurface: AppColors.darkTextPrimary,
         error: AppColors.subjectPink,
@@ -25,10 +42,10 @@ class AppTheme {
       ),
       // Slider customization
       sliderTheme: SliderThemeData(
-        activeTrackColor: AppColors.primary,
+        activeTrackColor: primary,
         inactiveTrackColor: AppColors.darkBorder,
         thumbColor: Colors.white,
-        overlayColor: AppColors.primary.withValues(alpha: 0.2),
+        overlayColor: primary.withValues(alpha: 0.2),
         trackHeight: 6.0,
       ),
       // Switch customization
@@ -38,7 +55,7 @@ class AppTheme {
           return AppColors.darkTextSecondary;
         }),
         trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.subjectGreen;
+          if (states.contains(WidgetState.selected)) return primary;
           return AppColors.darkBorder;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -46,7 +63,7 @@ class AppTheme {
       // Radio button customization
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return primary;
           return AppColors.darkBorder;
         }),
       ),
@@ -66,21 +83,24 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
       ),
     );
   }
 
-  static ThemeData get lightTheme {
+  static ThemeData getLightTheme([String? activeThemeId]) {
+    final primary = getPrimaryColor(activeThemeId);
+    final secondary = getSecondaryColor(activeThemeId, false);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightBgStart,
-      primaryColor: AppColors.primary,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.primaryDark,
+      primaryColor: primary,
+      colorScheme: ColorScheme.light(
+        primary: primary,
+        secondary: secondary,
         surface: AppColors.lightCardBg,
         onSurface: AppColors.lightTextPrimary,
         error: AppColors.subjectPink,
@@ -95,10 +115,10 @@ class AppTheme {
       ),
       // Slider customization
       sliderTheme: SliderThemeData(
-        activeTrackColor: AppColors.primary,
+        activeTrackColor: primary,
         inactiveTrackColor: AppColors.lightBorder,
         thumbColor: Colors.white,
-        overlayColor: AppColors.primary.withValues(alpha: 0.2),
+        overlayColor: primary.withValues(alpha: 0.2),
         trackHeight: 6.0,
       ),
       // Switch customization
@@ -108,7 +128,7 @@ class AppTheme {
           return AppColors.lightTextSecondary;
         }),
         trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.subjectGreen;
+          if (states.contains(WidgetState.selected)) return primary;
           return AppColors.lightBorder;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -116,7 +136,7 @@ class AppTheme {
       // Radio button customization
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return primary;
           return AppColors.lightBorder;
         }),
       ),
@@ -136,7 +156,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
       ),
     );

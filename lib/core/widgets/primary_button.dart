@@ -71,9 +71,9 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.15),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -95,10 +95,14 @@ class _PrimaryButtonState extends State<PrimaryButton> with SingleTickerProvider
                           widget.icon!,
                           const SizedBox(width: 8),
                         ],
-                        Text(
-                          widget.text,
-                          style: AppTextStyles.buttonText.copyWith(
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            widget.text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.buttonText.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],

@@ -8,24 +8,30 @@ class AppSnackbar {
     BuildContext context, {
     required SnackbarType type,
     required String title,
-    required String message,
+    String? message,
     VoidCallback? onUndo,
+    Duration? duration,
   }) {
     final typeColor = _getTypeColor(type);
     final iconData = _getIconData(type);
-    final duration = type == SnackbarType.error
-        ? const Duration(seconds: 4)
-        : (onUndo != null ? const Duration(seconds: 5) : const Duration(seconds: 3));
+    final autoDuration = duration ??
+        (type == SnackbarType.error
+            ? const Duration(seconds: 4)
+            : (onUndo != null
+                ? const Duration(seconds: 5)
+                : const Duration(milliseconds: 2500)));
+
+    final hasMessage = message != null && message.trim().isNotEmpty;
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        duration: duration,
+        duration: autoDuration,
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 84, top: 16),
         padding: EdgeInsets.zero,
         content: GestureDetector(
           onTap: () {
@@ -47,39 +53,53 @@ class AppSnackbar {
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: hasMessage ? 12 : 10,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   iconData,
                   color: typeColor,
-                  size: 22,
+                  size: 20,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                  child: hasMessage
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              message!,
+                              style: const TextStyle(
+                                color: AppColors.snackbarSubtitle,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        message,
-                        style: const TextStyle(
-                          color: AppColors.snackbarSubtitle,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 if (onUndo != null) ...[
                   const SizedBox(width: 12),
@@ -89,7 +109,8 @@ class AppSnackbar {
                       onUndo();
                     },
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
