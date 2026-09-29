@@ -8,6 +8,7 @@ class SettingsPreferencesModel extends SettingsPreferences {
     super.dailyReminder,
     super.streakAlerts,
     super.studyTips,
+    super.gradeLevel,
   });
 
   Map<String, dynamic> toMap() {
@@ -18,6 +19,7 @@ class SettingsPreferencesModel extends SettingsPreferences {
       'dailyReminder': dailyReminder,
       'streakAlerts': streakAlerts,
       'studyTips': studyTips,
+      'gradeLevel': gradeLevel,
     };
   }
 
@@ -29,6 +31,7 @@ class SettingsPreferencesModel extends SettingsPreferences {
       dailyReminder: map['dailyReminder'] as bool? ?? true,
       streakAlerts: map['streakAlerts'] as bool? ?? true,
       studyTips: map['studyTips'] as bool? ?? false,
+      gradeLevel: map['gradeLevel'] as String?,
     );
   }
 
@@ -40,6 +43,7 @@ class SettingsPreferencesModel extends SettingsPreferences {
       dailyReminder: settings.dailyReminder,
       streakAlerts: settings.streakAlerts,
       studyTips: settings.studyTips,
+      gradeLevel: settings.gradeLevel,
     );
   }
 }

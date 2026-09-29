@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/grade_selector_row.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../bloc/navigation_bloc.dart';
@@ -219,6 +220,62 @@ class DailySchedulePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Grade / Class Section (Optional)
+                            Row(
+                              children: [
+                                Text(
+                                  'Grade / Class',
+                                  style: AppTextStyles.headingSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightTextPrimary,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(Optional)',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Helps AI tailor study topics to your level',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            GradeSelectorRow(
+                              selectedGrade: state.settings.gradeLevel,
+                              onGradeSelected: isGenerating
+                                  ? (_) {}
+                                  : (newGrade) {
+                                      if (newGrade == null) {
+                                        context.read<SubjectsBloc>().add(
+                                              UpdateSettingsPreferencesEvent(
+                                                  clearGradeLevel: true),
+                                            );
+                                      } else {
+                                        context.read<SubjectsBloc>().add(
+                                              UpdateSettingsPreferencesEvent(
+                                                  gradeLevel: newGrade),
+                                            );
+                                      }
+                                    },
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 28),
+
                             // Daily Study Time Slider Card
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
