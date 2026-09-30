@@ -3,7 +3,8 @@ import '../entities/study_plan_result.dart';
 import '../entities/subject.dart';
 
 const int studyPlanMinTaskDurationMinutes = 10;
-const int studyPlanMaxTaskDurationMinutes = 60;
+const int studyPlanMaxTaskDurationMinutes = 30;
+const int studyPlanMaxPreSplitTaskDurationMinutes = 180;
 
 List<AgendaItem> ensureEverySubjectHasTask({
   required List<AgendaItem> agendaItems,
@@ -80,13 +81,120 @@ String _mergedTitle(List<AgendaItem> items) {
   return '${titles[0]} · ${titles[1]}';
 }
 
+List<AgendaItem> splitOverlongTasks(
+  List<AgendaItem> items, {
+  int maxMinutes = studyPlanMaxTaskDurationMinutes,
+}) {
+  final result = <AgendaItem>[];
+
+  for (final item in items) {
+    if (item.durationMinutes <= maxMinutes) {
+      result.add(item);
+      continue;
+    }
+
+    final duration = item.durationMinutes;
+    final count = (duration / maxMinutes).ceil();
+    final base = duration ~/ count;
+    final remainder = duration % count;
+
+    final cleanTitle = item.title.replaceAll(RegExp(r'\s*\(Part \d+\)$'), '');
+
+    for (var part = 1; part <= count; part++) {
+      final partDuration = part <= remainder ? base + 1 : base;
+      final newTitle = count > 1 ? '$cleanTitle (Part $part)' : cleanTitle;
+
+      result.add(
+        item.copyWith(
+          id: '${item.id}_part$part',
+          title: newTitle,
+          durationMinutes: partDuration,
+        ),
+      );
+    }
+  }
+
+  return result;
+}
+
+String _topicKey(AgendaItem item) {
+  final cleanTitle = item.title
+      .replaceAll(RegExp(r'\s*\(Part \d+\)$'), '')
+      .toLowerCase()
+      .trim();
+  final tag = item.tag.toLowerCase().trim();
+  return '$tag::$cleanTitle';
+}
+
+List<AgendaItem> interleaveTasksBySubject(List<AgendaItem> items) {
+  if (items.length <= 1) return items;
+
+  // 1. Group contiguous tasks of the same split topic into atomic topic units
+  final topicGroups = <List<AgendaItem>>[];
+  List<AgendaItem>? currentGroup;
+  String? currentTopicKey;
+
+  for (final item in items) {
+    final key = _topicKey(item);
+    if (currentGroup != null && key == currentTopicKey) {
+      currentGroup.add(item);
+    } else {
+      currentGroup = [item];
+      currentTopicKey = key;
+      topicGroups.add(currentGroup);
+    }
+  }
+
+  // 2. Group topic units by subject
+  final subjectTopicBuckets = <String, List<List<AgendaItem>>>{};
+  final subjectOrder = <String>[];
+
+  for (final group in topicGroups) {
+    final tagKey = group.first.tag.toLowerCase().trim();
+    if (!subjectTopicBuckets.containsKey(tagKey)) {
+      subjectTopicBuckets[tagKey] = [];
+      subjectOrder.add(tagKey);
+    }
+    subjectTopicBuckets[tagKey]!.add(group);
+  }
+
+  if (subjectOrder.length <= 1) return items;
+
+  // 3. Interleave topic units across subjects round-robin
+  final interleaved = <AgendaItem>[];
+  var addedAny = true;
+
+  while (addedAny) {
+    addedAny = false;
+    for (final tagKey in subjectOrder) {
+      final bucket = subjectTopicBuckets[tagKey]!;
+      if (bucket.isNotEmpty) {
+        final group = bucket.removeAt(0);
+        interleaved.addAll(group);
+        addedAny = true;
+      }
+    }
+  }
+
+  return interleaved;
+}
+
 List<AgendaItem> normalizeAgendaToDailyBudget(
   List<AgendaItem> agendaItems,
   int dailyMinutes,
 ) {
   if (agendaItems.isEmpty) return agendaItems;
 
-  var normalized = List<AgendaItem>.from(agendaItems);
+  var normalized = agendaItems
+      .map(
+        (item) => item.copyWith(
+          durationMinutes: item.durationMinutes.clamp(
+            studyPlanMinTaskDurationMinutes,
+            studyPlanMaxPreSplitTaskDurationMinutes,
+          ),
+        ),
+      )
+      .toList();
 
   final actualTotal = normalized.fold<int>(
     0,
@@ -100,19 +208,27 @@ List<AgendaItem> normalizeAgendaToDailyBudget(
       return item.copyWith(
         durationMinutes: scaled.clamp(
           studyPlanMinTaskDurationMinutes,
-          studyPlanMaxTaskDurationMinutes,
+          dailyMinutes,
         ),
       );
     }).toList();
   }
 
-  return _balanceToExactBudget(normalized, dailyMinutes);
+  normalized = _balanceToExactBudget(
+    normalized,
+    dailyMinutes,
+    maxTaskDuration: studyPlanMaxPreSplitTaskDurationMinutes,
+  );
+
+  final split = splitOverlongTasks(normalized);
+  return interleaveTasksBySubject(split);
 }
 
 List<AgendaItem> _balanceToExactBudget(
   List<AgendaItem> items,
-  int dailyMinutes,
-) {
+  int dailyMinutes, {
+  int maxTaskDuration = studyPlanMaxPreSplitTaskDurationMinutes,
+}) {
   var result = List<AgendaItem>.from(items);
 
   for (var pass = 0; pass < 10000; pass++) {
@@ -124,10 +240,10 @@ List<AgendaItem> _balanceToExactBudget(
       final index = _indexWithMostAdjustRoom(
         result,
         increase: true,
+        maxTaskDuration: maxTaskDuration,
       );
       if (index == null) break;
-      final room =
-          studyPlanMaxTaskDurationMinutes - result[index].durationMinutes;
+      final room = maxTaskDuration - result[index].durationMinutes;
       final delta = diff < room ? diff : room;
       result[index] = result[index].copyWith(
         durationMinutes: result[index].durationMinutes + delta,
@@ -136,6 +252,7 @@ List<AgendaItem> _balanceToExactBudget(
       final index = _indexWithMostAdjustRoom(
         result,
         increase: false,
+        maxTaskDuration: maxTaskDuration,
       );
       if (index == null) break;
       final room =
@@ -153,13 +270,14 @@ List<AgendaItem> _balanceToExactBudget(
 int? _indexWithMostAdjustRoom(
   List<AgendaItem> items, {
   required bool increase,
+  int maxTaskDuration = studyPlanMaxPreSplitTaskDurationMinutes,
 }) {
   int? bestIndex;
   var bestRoom = 0;
 
   for (var i = 0; i < items.length; i++) {
     final room = increase
-        ? studyPlanMaxTaskDurationMinutes - items[i].durationMinutes
+        ? maxTaskDuration - items[i].durationMinutes
         : items[i].durationMinutes - studyPlanMinTaskDurationMinutes;
     if (room > bestRoom) {
       bestRoom = room;
@@ -187,7 +305,16 @@ StudyPlanResult finalizeStudyPlan({
   required int dailyMinutes,
   required int batchTimestamp,
 }) {
-  var items = List<AgendaItem>.from(geminiItems);
+  var items = geminiItems
+      .map(
+        (item) => item.copyWith(
+          durationMinutes: item.durationMinutes.clamp(
+            studyPlanMinTaskDurationMinutes,
+            studyPlanMaxPreSplitTaskDurationMinutes,
+          ),
+        ),
+      )
+      .toList();
 
   if (items.length * studyPlanMinTaskDurationMinutes > dailyMinutes) {
     items = collapseDuplicateSubjectTasks(items);
@@ -210,7 +337,7 @@ StudyPlanResult finalizeStudyPlan({
         .toList();
 
     return StudyPlanResult(
-      agendaItems: capped,
+      agendaItems: interleaveTasksBySubject(capped),
       budgetWarningMessage: buildBudgetTooSmallWarning(
         subjectCount: subjects.length,
         dailyMinutes: dailyMinutes,
