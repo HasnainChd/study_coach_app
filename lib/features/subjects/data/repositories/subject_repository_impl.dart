@@ -124,4 +124,44 @@ class SubjectRepositoryImpl implements SubjectRepository {
   Future<void> saveLastStreakClaimedDate(String dateStr) async {
     await localDataSource.saveLastStreakClaimedDate(dateStr);
   }
+
+  @override
+  Future<int> getCoins() async {
+    return await localDataSource.getCoins();
+  }
+
+  @override
+  Future<void> saveCoins(int coins) async {
+    await localDataSource.saveCoins(coins);
+  }
+
+  @override
+  Future<List<String>> getUnlockedRewards() async {
+    return await localDataSource.getUnlockedRewards();
+  }
+
+  @override
+  Future<void> saveUnlockedRewards(List<String> rewardIds) async {
+    await localDataSource.saveUnlockedRewards(rewardIds);
+  }
+
+  @override
+  Future<String?> getActiveThemeId() async {
+    return await localDataSource.getActiveThemeId();
+  }
+
+  @override
+  Future<void> saveActiveThemeId(String? id) async {
+    await localDataSource.saveActiveThemeId(id);
+  }
+
+  @override
+  Future<String?> getActiveBadgeId() async {
+    return await localDataSource.getActiveBadgeId();
+  }
+
+  @override
+  Future<void> saveActiveBadgeId(String? id) async {
+    await localDataSource.saveActiveBadgeId(id);
+  }
 }

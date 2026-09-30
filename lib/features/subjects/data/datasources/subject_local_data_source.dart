@@ -36,6 +36,18 @@ abstract class SubjectLocalDataSource {
 
   Future<String> getLastStreakClaimedDate();
   Future<void> saveLastStreakClaimedDate(String dateStr);
+
+  Future<int> getCoins();
+  Future<void> saveCoins(int coins);
+
+  Future<List<String>> getUnlockedRewards();
+  Future<void> saveUnlockedRewards(List<String> rewardIds);
+
+  Future<String?> getActiveThemeId();
+  Future<void> saveActiveThemeId(String? id);
+
+  Future<String?> getActiveBadgeId();
+  Future<void> saveActiveBadgeId(String? id);
 }
 
 class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
@@ -54,6 +66,10 @@ class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
   static const String _keyXp = 'xpProgress';
   static const String _keyLevel = 'level';
   static const String _keyLastStreakDate = 'lastStreakClaimedDate';
+  static const String _keyCoins = 'coins';
+  static const String _keyUnlockedRewards = 'unlockedRewardIds';
+  static const String _keyActiveTheme = 'activeThemeId';
+  static const String _keyActiveBadge = 'activeBadgeId';
 
   @override
   Future<List<SubjectModel>> getSubjects() async {
@@ -191,5 +207,53 @@ class SubjectLocalDataSourceImpl implements SubjectLocalDataSource {
   @override
   Future<void> saveLastStreakClaimedDate(String dateStr) async {
     await _box.put(_keyLastStreakDate, dateStr);
+  }
+
+  @override
+  Future<int> getCoins() async {
+    final dynamic val = _box.get(_keyCoins);
+    if (val is int) return val;
+    return 0;
+  }
+
+  @override
+  Future<void> saveCoins(int coins) async {
+    await _box.put(_keyCoins, coins);
+  }
+
+  @override
+  Future<List<String>> getUnlockedRewards() async {
+    final List<dynamic>? rawList = _box.get(_keyUnlockedRewards);
+    if (rawList == null) return [];
+    return rawList.map((e) => e.toString()).toList();
+  }
+
+  @override
+  Future<void> saveUnlockedRewards(List<String> rewardIds) async {
+    await _box.put(_keyUnlockedRewards, rewardIds);
+  }
+
+  @override
+  Future<String?> getActiveThemeId() async {
+    final dynamic val = _box.get(_keyActiveTheme);
+    if (val is String) return val;
+    return null;
+  }
+
+  @override
+  Future<void> saveActiveThemeId(String? id) async {
+    await _box.put(_keyActiveTheme, id);
+  }
+
+  @override
+  Future<String?> getActiveBadgeId() async {
+    final dynamic val = _box.get(_keyActiveBadge);
+    if (val is String) return val;
+    return null;
+  }
+
+  @override
+  Future<void> saveActiveBadgeId(String? id) async {
+    await _box.put(_keyActiveBadge, id);
   }
 }

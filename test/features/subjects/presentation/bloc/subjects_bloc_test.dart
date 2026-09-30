@@ -103,6 +103,10 @@ class MockSubjectRepository implements SubjectRepository {
   double xpProgress = 0.68;
   int level = 7;
   String lastStreakClaimedDate = '';
+  int coins = 0;
+  List<String> unlockedRewardIds = [];
+  String? activeThemeId;
+  String? activeBadgeId;
 
   @override
   Future<int> getStreak() async => streak;
@@ -134,6 +138,38 @@ class MockSubjectRepository implements SubjectRepository {
   @override
   Future<void> saveLastStreakClaimedDate(String dateStr) async {
     lastStreakClaimedDate = dateStr;
+  }
+
+  @override
+  Future<int> getCoins() async => coins;
+
+  @override
+  Future<void> saveCoins(int coins) async {
+    this.coins = coins;
+  }
+
+  @override
+  Future<List<String>> getUnlockedRewards() async => unlockedRewardIds;
+
+  @override
+  Future<void> saveUnlockedRewards(List<String> rewardIds) async {
+    unlockedRewardIds = rewardIds;
+  }
+
+  @override
+  Future<String?> getActiveThemeId() async => activeThemeId;
+
+  @override
+  Future<void> saveActiveThemeId(String? id) async {
+    activeThemeId = id;
+  }
+
+  @override
+  Future<String?> getActiveBadgeId() async => activeBadgeId;
+
+  @override
+  Future<void> saveActiveBadgeId(String? id) async {
+    activeBadgeId = id;
   }
 }
 
@@ -171,6 +207,9 @@ class FakeUsageLimitService implements UsageLimitService {
 
   @override
   Future<int> remainingToday(UsageType type) async => type.limit;
+
+  @override
+  Future<void> resetCount(UsageType type) async {}
 }
 
 class DeniedUsageLimitService implements UsageLimitService {
@@ -182,6 +221,9 @@ class DeniedUsageLimitService implements UsageLimitService {
 
   @override
   Future<int> remainingToday(UsageType type) async => 0;
+
+  @override
+  Future<void> resetCount(UsageType type) async {}
 }
 
 void main() {
@@ -300,12 +342,17 @@ void main() {
   });
 
   test('ClaimStreakEvent increments streak when not claimed today', () async {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yStr = '${yesterday.year.toString().padLeft(4, '0')}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    final tStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
     bloc.emit(bloc.state.copyWith(
       streak: 12,
-      lastStreakClaimedDate: '',
+      lastStreakClaimedDate: yStr,
     ));
     repository.streak = 12;
-    repository.lastStreakClaimedDate = '';
+    repository.lastStreakClaimedDate = yStr;
 
     bloc.add(ClaimStreakEvent());
 
@@ -314,7 +361,7 @@ void main() {
       emits(
         predicate<SubjectsState>((state) =>
             state.streak == 13 &&
-            state.lastStreakClaimedDate == DateTime.now().toIso8601String().substring(0, 10)),
+            state.lastStreakClaimedDate == tStr),
       ),
     );
   });
@@ -332,6 +379,10 @@ void main() {
   });
 
   test('ToggleAgendaItemEvent auto-increments XP and claims streak on completion', () async {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yStr = '${yesterday.year.toString().padLeft(4, '0')}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+
     final item1 = AgendaItem(
       id: 'task_1',
       title: 'Calculus',
@@ -355,7 +406,7 @@ void main() {
       agendaItems: [item1, item2],
       xpProgress: 0.20,
       streak: 12,
-      lastStreakClaimedDate: '',
+      lastStreakClaimedDate: yStr,
     ));
 
     bloc.add(ToggleAgendaItemEvent('task_1'));

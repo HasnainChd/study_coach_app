@@ -50,6 +50,8 @@ class UpdateSettingsPreferencesEvent extends SubjectsEvent {
   final bool? dailyReminder;
   final bool? streakAlerts;
   final bool? studyTips;
+  final String? gradeLevel;
+  final bool clearGradeLevel;
 
   UpdateSettingsPreferencesEvent({
     this.pomodoroFocus,
@@ -58,6 +60,8 @@ class UpdateSettingsPreferencesEvent extends SubjectsEvent {
     this.dailyReminder,
     this.streakAlerts,
     this.studyTips,
+    this.gradeLevel,
+    this.clearGradeLevel = false,
   });
 }
 
@@ -97,3 +101,30 @@ class UpdateSubjectEvent extends SubjectsEvent {
     this.examDate,
   });
 }
+
+class CompleteQualifyingFocusSessionEvent extends SubjectsEvent {}
+
+class UnlockRewardEvent extends SubjectsEvent {
+  final String rewardId;
+  final int cost;
+
+  UnlockRewardEvent({
+    required this.rewardId,
+    required this.cost,
+  });
+}
+
+class SelectActiveThemeEvent extends SubjectsEvent {
+  final String? themeId;
+  SelectActiveThemeEvent(this.themeId);
+}
+
+class SelectActiveBadgeEvent extends SubjectsEvent {
+  final String? badgeId;
+  SelectActiveBadgeEvent(this.badgeId);
+}
+
+class ClearStreakCelebrationEvent extends SubjectsEvent {}
+
+class ClearStreakResetEvent extends SubjectsEvent {}
+

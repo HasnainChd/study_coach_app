@@ -32,7 +32,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
     'Computer Science',
   ];
 
-  Color _getUniqueSubjectColor(List<Subject> currentSubjects, int defaultIndex) {
+  Color _getUniqueSubjectColor(
+      List<Subject> currentSubjects, int defaultIndex) {
     final usedColors = currentSubjects.map((s) => s.color.value).toSet();
     for (final color in AppColors.subjectColors) {
       if (!usedColors.contains(color.value)) {
@@ -139,30 +140,33 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: BlocListener<SubjectsBloc, SubjectsState>(
-        listener: (context, state) {
-          if (state.status == SubjectsStatus.failure && state.errorMessage != null) {
-            AppSnackbar.show(
-              context,
-              type: SnackbarType.error,
-              title: 'Error',
-              message: state.errorMessage!,
-            );
-          }
-        },
-        child: GradientBackground(
+        body: BlocListener<SubjectsBloc, SubjectsState>(
+      listener: (context, state) {
+        if (state.status == SubjectsStatus.failure &&
+            state.errorMessage != null) {
+          AppSnackbar.show(
+            context,
+            type: SnackbarType.error,
+            title: 'Error',
+            message: state.errorMessage!,
+          );
+        }
+      },
+      child: GradientBackground(
+        child: SafeArea(
           child: Column(
             children: [
               // Header with back button & Step indicator
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   children: [
                     IconButton(
                       icon: Icon(
                         Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                        color:
+                            isDark ? Colors.white : AppColors.lightTextPrimary,
                       ),
                       onPressed: () {
                         context.read<NavigationBloc>().add(
@@ -172,8 +176,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                     ),
                     const Spacer(),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: isDark
                             ? AppColors.primary.withValues(alpha: 0.1)
@@ -288,8 +292,10 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                   decoration: BoxDecoration(
                                     color: isAdded
                                         ? (isDark
-                                            ? Colors.white.withValues(alpha: 0.06)
-                                            : Colors.black.withValues(alpha: 0.05))
+                                            ? Colors.white
+                                                .withValues(alpha: 0.06)
+                                            : Colors.black
+                                                .withValues(alpha: 0.05))
                                         : (isDark
                                             ? AppColors.darkCardBg
                                             : AppColors.lightCardBg),
@@ -329,7 +335,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                           color: isAdded
                                               ? (isDark
                                                   ? AppColors.darkTextSecondary
-                                                  : AppColors.lightTextSecondary)
+                                                  : AppColors
+                                                      .lightTextSecondary)
                                               : (isDark
                                                   ? AppColors.darkTextPrimary
                                                   : AppColors.lightTextPrimary),
@@ -384,8 +391,10 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                 if (_nameError != null) {
                                   final name = value.trim();
                                   if (name.isNotEmpty && name.length <= 40) {
-                                    final subjects =
-                                        context.read<SubjectsBloc>().state.subjects;
+                                    final subjects = context
+                                        .read<SubjectsBloc>()
+                                        .state
+                                        .subjects;
                                     if (!subjects.any((s) =>
                                         s.name.toLowerCase() ==
                                         name.toLowerCase())) {
@@ -440,7 +449,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                 AppColors.subjectColors.length,
                                 (index) {
                                   final color = AppColors.subjectColors[index];
-                                  final isSelected = _selectedColorIndex == index;
+                                  final isSelected =
+                                      _selectedColorIndex == index;
                                   return GestureDetector(
                                     onTap: () {
                                       setState(() {
@@ -457,7 +467,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                             ? Border.all(
                                                 color: isDark
                                                     ? Colors.white
-                                                    : AppColors.lightTextPrimary,
+                                                    : AppColors
+                                                        .lightTextPrimary,
                                                 width: 2.5,
                                               )
                                             : null,
@@ -575,24 +586,31 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                                   children: [
                                                     Text(
                                                       subject.name,
-                                                      style: AppTextStyles.bodyLarge
+                                                      style: AppTextStyles
+                                                          .bodyLarge
                                                           .copyWith(
                                                         color: isDark
                                                             ? AppColors
                                                                 .darkTextPrimary
                                                             : AppColors
                                                                 .lightTextPrimary,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
                                                     ),
-                                                    if (subject.examDate != null) ...[
+                                                    if (subject.examDate !=
+                                                        null) ...[
                                                       const SizedBox(height: 4),
                                                       Text(
                                                         'Exam: ${subject.examDate!.day}/${subject.examDate!.month}/${subject.examDate!.year}',
-                                                        style: AppTextStyles.bodySmall.copyWith(
+                                                        style: AppTextStyles
+                                                            .bodySmall
+                                                            .copyWith(
                                                           color: isDark
-                                                              ? AppColors.darkTextSecondary
-                                                              : AppColors.lightTextSecondary,
+                                                              ? AppColors
+                                                                  .darkTextSecondary
+                                                              : AppColors
+                                                                  .lightTextSecondary,
                                                         ),
                                                       ),
                                                     ],
@@ -604,12 +622,15 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                               icon: Icon(
                                                 Icons.delete_outline_rounded,
                                                 color: isDark
-                                                    ? AppColors.darkTextSecondary
+                                                    ? AppColors
+                                                        .darkTextSecondary
                                                     : AppColors
                                                         .lightTextSecondary,
                                               ),
                                               onPressed: () {
-                                                context.read<SubjectsBloc>().add(
+                                                context
+                                                    .read<SubjectsBloc>()
+                                                    .add(
                                                       RemoveSubjectEvent(
                                                           subject.id),
                                                     );
@@ -617,7 +638,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                                                   context,
                                                   type: SnackbarType.warning,
                                                   title: 'Subject Removed',
-                                                  message: 'Subject has been removed.',
+                                                  message:
+                                                      'Subject has been removed.',
                                                 );
                                               },
                                             ),
@@ -651,7 +673,8 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                             context,
                             type: SnackbarType.error,
                             title: 'No Subjects Added',
-                            message: 'Please add at least one subject before generating your plan.',
+                            message:
+                                'Please add at least one subject before generating your plan.',
                           );
                           return;
                         }
@@ -667,6 +690,6 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

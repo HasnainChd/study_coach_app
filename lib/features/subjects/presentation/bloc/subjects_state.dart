@@ -22,8 +22,14 @@ class SubjectsState {
   final int streak;
   final double xpProgress;
   final int level;
-  final String lastStreakClaimedDate;
+  final String lastStreakClaimedDate; // Single unified active date string (YYYY-MM-DD)
   final bool streakResetTriggered;
+  final int coins;
+  final List<String> unlockedRewardIds;
+  final String? activeThemeId;
+  final String? activeBadgeId;
+  final int? earnedCoinsLastAction;
+  final String? streakCelebrationMessage;
   final String? planBudgetWarningMessage;
   final bool showNotificationPermissionWarning;
 
@@ -42,6 +48,12 @@ class SubjectsState {
     this.level = 1,
     this.lastStreakClaimedDate = '',
     this.streakResetTriggered = false,
+    this.coins = 0,
+    this.unlockedRewardIds = const [],
+    this.activeThemeId,
+    this.activeBadgeId,
+    this.earnedCoinsLastAction,
+    this.streakCelebrationMessage,
     this.planBudgetWarningMessage,
     this.showNotificationPermissionWarning = false,
   });
@@ -62,6 +74,16 @@ class SubjectsState {
     int? level,
     String? lastStreakClaimedDate,
     bool? streakResetTriggered,
+    int? coins,
+    List<String>? unlockedRewardIds,
+    String? activeThemeId,
+    bool clearActiveThemeId = false,
+    String? activeBadgeId,
+    bool clearActiveBadgeId = false,
+    int? earnedCoinsLastAction,
+    bool clearEarnedCoinsLastAction = false,
+    String? streakCelebrationMessage,
+    bool clearStreakCelebrationMessage = false,
     String? planBudgetWarningMessage,
     bool clearPlanBudgetWarning = false,
     bool? showNotificationPermissionWarning,
@@ -83,6 +105,16 @@ class SubjectsState {
       level: level ?? this.level,
       lastStreakClaimedDate: lastStreakClaimedDate ?? this.lastStreakClaimedDate,
       streakResetTriggered: streakResetTriggered ?? this.streakResetTriggered,
+      coins: coins ?? this.coins,
+      unlockedRewardIds: unlockedRewardIds ?? this.unlockedRewardIds,
+      activeThemeId: clearActiveThemeId ? null : (activeThemeId ?? this.activeThemeId),
+      activeBadgeId: clearActiveBadgeId ? null : (activeBadgeId ?? this.activeBadgeId),
+      earnedCoinsLastAction: clearEarnedCoinsLastAction
+          ? null
+          : (earnedCoinsLastAction ?? this.earnedCoinsLastAction),
+      streakCelebrationMessage: clearStreakCelebrationMessage
+          ? null
+          : (streakCelebrationMessage ?? this.streakCelebrationMessage),
       planBudgetWarningMessage: clearPlanBudgetWarning
           ? null
           : (planBudgetWarningMessage ?? this.planBudgetWarningMessage),

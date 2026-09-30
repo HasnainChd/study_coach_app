@@ -35,4 +35,16 @@ abstract class SubjectRepository {
 
   Future<String> getLastStreakClaimedDate();
   Future<void> saveLastStreakClaimedDate(String dateStr);
+
+  Future<int> getCoins();
+  Future<void> saveCoins(int coins);
+
+  Future<List<String>> getUnlockedRewards();
+  Future<void> saveUnlockedRewards(List<String> rewardIds);
+
+  Future<String?> getActiveThemeId();
+  Future<void> saveActiveThemeId(String? id);
+
+  Future<String?> getActiveBadgeId();
+  Future<void> saveActiveBadgeId(String? id);
 }

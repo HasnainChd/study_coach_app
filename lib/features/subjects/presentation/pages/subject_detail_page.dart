@@ -620,7 +620,58 @@ class SubjectDetailPage extends StatelessWidget {
                                   physics: const NeverScrollableScrollPhysics(),
                                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                                   itemCount: subjectTasks.length,
-                                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                                  separatorBuilder: (context, index) {
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? const Color(0xFFFF9800)
+                                                    .withValues(alpha: 0.14)
+                                                : const Color(0xFFFFF3E0),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: const Color(0xFFFF9800)
+                                                  .withValues(alpha: 0.35),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.free_breakfast_rounded,
+                                                size: 16,
+                                                color: Color(0xFFFF9800),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  'Short break suggested (5 min) — rest before continuing',
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? const Color(
+                                                            0xFFFFB74D)
+                                                        : const Color(
+                                                            0xFFE65100),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                      ],
+                                    );
+                                  },
                                   itemBuilder: (context, index) {
                                     final item = subjectTasks[index];
                                     return AnimatedContainer(

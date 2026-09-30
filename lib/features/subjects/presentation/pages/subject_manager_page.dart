@@ -407,7 +407,9 @@ class SubjectManagerPage extends StatelessWidget {
 
     return Scaffold(
       body: GradientBackground(
-        child: Column(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header title
@@ -618,6 +620,7 @@ class SubjectManagerPage extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
