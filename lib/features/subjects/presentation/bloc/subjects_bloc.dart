@@ -71,6 +71,12 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     on<AddXpEvent>(_onAddXp);
     on<SelectAgendaItemEvent>(_onSelectAgendaItem);
     on<UpdateSubjectEvent>(_onUpdateSubject);
+    on<CompleteQualifyingFocusSessionEvent>(_onCompleteQualifyingFocusSession);
+    on<UnlockRewardEvent>(_onUnlockReward);
+    on<SelectActiveThemeEvent>(_onSelectActiveTheme);
+    on<SelectActiveBadgeEvent>(_onSelectActiveBadge);
+    on<ClearStreakCelebrationEvent>(_onClearStreakCelebration);
+    on<ClearStreakResetEvent>(_onClearStreakReset);
   }
 
   AgendaItem? getNextIncompleteItem(String? currentTaskTitle) {
@@ -113,8 +119,10 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       final xpProgress = await repository.getXpProgress();
       final level = await repository.getLevel();
       final lastClaimed = await repository.getLastStreakClaimedDate();
-
-
+      final coins = await repository.getCoins();
+      final unlockedRewards = await repository.getUnlockedRewards();
+      final activeThemeId = await repository.getActiveThemeId();
+      final activeBadgeId = await repository.getActiveBadgeId();
 
       // Data migration on launch
       bool migrated = false;
@@ -131,17 +139,19 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         await repository.saveAgendaItems(agenda);
       }
 
-      // Streak Reset Check on Launch
+      // Streak Reset Check on Launch using local device timezone midnight boundaries
       int currentStreak = streak;
       bool showResetSnackbar = false;
+      final now = DateTime.now();
+      final todayDateStr = _formatLocalDate(now);
+      final yesterdayDateStr = _formatLocalDate(DateTime(now.year, now.month, now.day - 1));
+
       if (lastClaimed.isNotEmpty) {
         try {
-          final now = DateTime.now();
-          final todayDateStr = now.toIso8601String().substring(0, 10);
-          final yesterday = now.subtract(const Duration(days: 1));
-          final yesterdayDateStr = yesterday.toIso8601String().substring(0, 10);
-          
-          if (lastClaimed != todayDateStr && lastClaimed != yesterdayDateStr && streak > 0) {
+          if (todayDateStr.compareTo(lastClaimed) >= 0 &&
+              lastClaimed != todayDateStr &&
+              lastClaimed != yesterdayDateStr &&
+              streak > 0) {
             currentStreak = 0;
             await repository.saveStreak(0);
             showResetSnackbar = true;
@@ -165,6 +175,10 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         xpProgress: xpProgress,
         level: level,
         lastStreakClaimedDate: lastClaimed,
+        coins: coins,
+        unlockedRewardIds: unlockedRewards,
+        activeThemeId: activeThemeId,
+        activeBadgeId: activeBadgeId,
         streakResetTriggered: showResetSnackbar,
         errorMessage: null,
       ));
@@ -401,8 +415,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
 
       var currentXp = state.xpProgress;
       var currentLevel = state.level;
-      var currentStreak = state.streak;
-      var lastClaimed = state.lastStreakClaimedDate;
       final xpPerTask = _xpPerAgendaTask(state.agendaItems.length);
 
       if (shouldAwardXp) {
@@ -416,7 +428,7 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
 
         final item = toggledItem;
         if (item != null) {
-          final today = DateTime.now().toIso8601String().substring(0, 10);
+          final today = _formatLocalDate(DateTime.now());
           await studyHistoryRepository.addEntry(
             StudyHistoryEntry(
               id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -428,15 +440,6 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
               xpAwarded: xpPerTask,
             ),
           );
-        }
-
-        // Auto claim streak on completing study tasks for the day
-        final today = DateTime.now().toIso8601String().substring(0, 10);
-        if (lastClaimed != today) {
-          currentStreak += 1;
-          lastClaimed = today;
-          await repository.saveStreak(currentStreak);
-          await repository.saveLastStreakClaimedDate(today);
         }
       } else if (shouldDeductXp) {
         currentXp -= xpPerTask;
@@ -457,17 +460,24 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       final calculatedSubjects = _calculateSubjectsWithProgress(state.subjects, updatedAgenda);
       await repository.saveSubjects(calculatedSubjects);
 
-      emit(state.copyWith(
+      final nextState = state.copyWith(
         agendaItems: updatedAgenda,
         subjects: calculatedSubjects,
         xpProgress: currentXp,
         level: currentLevel,
-        streak: currentStreak,
-        lastStreakClaimedDate: lastClaimed,
-      ));
+      );
 
-      if (shouldAwardXp && lastClaimed == DateTime.now().toIso8601String().substring(0, 10)) {
-        await NotificationService().cancelNotification(NotificationIds.streakAlert);
+      if (shouldAwardXp) {
+        await _processQualifyingAction(emit, baseState: nextState);
+        if (state.lastStreakClaimedDate == _formatLocalDate(DateTime.now())) {
+          await NotificationService().cancelNotification(NotificationIds.streakAlert);
+        }
+      } else {
+        emit(nextState.copyWith(
+          clearEarnedCoinsLastAction: true,
+          clearStreakCelebrationMessage: true,
+          streakResetTriggered: false,
+        ));
       }
 
     } catch (_) {}
@@ -534,6 +544,8 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
         dailyReminder: event.dailyReminder,
         streakAlerts: event.streakAlerts,
         studyTips: event.studyTips,
+        gradeLevel: event.gradeLevel,
+        clearGradeLevel: event.clearGradeLevel,
       );
       await repository.saveSettingsPreferences(updatedPrefs);
       emit(state.copyWith(settings: updatedPrefs));
@@ -635,20 +647,156 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     }
   }
 
+  String _formatLocalDate(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Future<void> _processQualifyingAction(Emitter<SubjectsState> emit, {SubjectsState? baseState}) async {
+    final stateToUse = baseState ?? state;
+    final now = DateTime.now();
+    final todayStr = _formatLocalDate(now);
+    final yesterdayStr = _formatLocalDate(DateTime(now.year, now.month, now.day - 1));
+
+    final lastActiveDate = stateToUse.lastStreakClaimedDate;
+
+    if (lastActiveDate.isNotEmpty && todayStr.compareTo(lastActiveDate) < 0) {
+      // Clock moved backward relative to last recorded claim — treat as no-op guard!
+      emit((baseState ?? state).copyWith(
+        clearEarnedCoinsLastAction: true,
+        clearStreakCelebrationMessage: true,
+        streakResetTriggered: false,
+      ));
+      return;
+    }
+
+    if (lastActiveDate == todayStr) {
+      // Already credited today — no double counting!
+      emit((baseState ?? state).copyWith(
+        clearEarnedCoinsLastAction: true,
+        clearStreakCelebrationMessage: true,
+        streakResetTriggered: false,
+      ));
+      return;
+    }
+
+    int newStreak;
+    if (lastActiveDate == yesterdayStr) {
+      newStreak = stateToUse.streak + 1;
+    } else {
+      // Missing a day or brand new streak
+      newStreak = 1;
+    }
+
+    // Multiplier logic:
+    // Days 1-4: 1.0x (10 coins)
+    // Days 5-9: 1.5x (15 coins)
+    // Day 10+: 2.0x (20 coins)
+    double multiplier = 1.0;
+    if (newStreak >= 10) {
+      multiplier = 2.0;
+    } else if (newStreak >= 5) {
+      multiplier = 1.5;
+    }
+
+    const baseCoins = 10;
+    final earnedCoins = (baseCoins * multiplier).round();
+    final newTotalCoins = stateToUse.coins + earnedCoins;
+
+    await repository.saveStreak(newStreak);
+    await repository.saveCoins(newTotalCoins);
+    await repository.saveLastStreakClaimedDate(todayStr);
+
+    final String celebrationMsg = newStreak > 1
+        ? '🔥 $newStreak Day Streak! +$earnedCoins Coins Earned! 🪙'
+        : '🔥 1 Day Streak Started! +$earnedCoins Coins Earned! 🪙';
+
+    emit((baseState ?? state).copyWith(
+      streak: newStreak,
+      coins: newTotalCoins,
+      lastStreakClaimedDate: todayStr,
+      earnedCoinsLastAction: earnedCoins,
+      streakCelebrationMessage: celebrationMsg,
+      streakResetTriggered: false,
+    ));
+  }
+
   Future<void> _onClaimStreak(
     ClaimStreakEvent event,
     Emitter<SubjectsState> emit,
   ) async {
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    if (state.lastStreakClaimedDate != today) {
-      final newStreak = state.streak + 1;
-      await repository.saveStreak(newStreak);
-      await repository.saveLastStreakClaimedDate(today);
-      emit(state.copyWith(
-        streak: newStreak,
-        lastStreakClaimedDate: today,
-      ));
+    await _processQualifyingAction(emit);
+  }
+
+  Future<void> _onCompleteQualifyingFocusSession(
+    CompleteQualifyingFocusSessionEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    await _processQualifyingAction(emit);
+  }
+
+  Future<void> _onUnlockReward(
+    UnlockRewardEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    if (state.coins < event.cost) return;
+    if (state.unlockedRewardIds.contains(event.rewardId)) return;
+
+    final newCoins = state.coins - event.cost;
+    final newUnlocked = List<String>.from(state.unlockedRewardIds)..add(event.rewardId);
+
+    await repository.saveCoins(newCoins);
+    await repository.saveUnlockedRewards(newUnlocked);
+
+    if (event.rewardId == 'ai_plan_regen_boost') {
+      await usageLimitService.resetCount(UsageType.planRegenerate);
     }
+
+    emit(state.copyWith(
+      coins: newCoins,
+      unlockedRewardIds: newUnlocked,
+    ));
+  }
+
+  Future<void> _onSelectActiveTheme(
+    SelectActiveThemeEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    await repository.saveActiveThemeId(event.themeId);
+    emit(state.copyWith(
+      activeThemeId: event.themeId,
+      clearActiveThemeId: event.themeId == null,
+    ));
+  }
+
+  Future<void> _onSelectActiveBadge(
+    SelectActiveBadgeEvent event,
+    Emitter<SubjectsState> emit,
+  ) async {
+    await repository.saveActiveBadgeId(event.badgeId);
+    emit(state.copyWith(
+      activeBadgeId: event.badgeId,
+      clearActiveBadgeId: event.badgeId == null,
+    ));
+  }
+
+  void _onClearStreakCelebration(
+    ClearStreakCelebrationEvent event,
+    Emitter<SubjectsState> emit,
+  ) {
+    emit(state.copyWith(
+      clearEarnedCoinsLastAction: true,
+      clearStreakCelebrationMessage: true,
+    ));
+  }
+
+  void _onClearStreakReset(
+    ClearStreakResetEvent event,
+    Emitter<SubjectsState> emit,
+  ) {
+    emit(state.copyWith(streakResetTriggered: false));
   }
 
   Future<void> _onAddXp(

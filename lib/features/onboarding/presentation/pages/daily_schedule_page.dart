@@ -132,8 +132,9 @@ class DailySchedulePage extends StatelessWidget {
           return Stack(
             children: [
               GradientBackground(
-                child: Column(
-                  children: [
+                child: SafeArea(
+                  child: Column(
+                    children: [
                     // Header with back button & Step indicator
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -479,6 +480,7 @@ class DailySchedulePage extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
               if (isGenerating)
                 Positioned.fill(
                   child: Container(

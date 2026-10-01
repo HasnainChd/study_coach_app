@@ -176,7 +176,9 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     return Scaffold(
       body: GradientBackground(
-        child: Column(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
           children: [
             // ── Header ──────────────────────────────────────────────────────
             Padding(
@@ -405,6 +407,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
           ],
         ),
       ),
+    ),
     );
   }
 

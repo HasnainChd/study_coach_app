@@ -28,10 +28,12 @@ class StudyAnalyticsPage extends StatelessWidget {
           final isDark = theme.brightness == Brightness.dark;
 
           return Scaffold(
-            body: GradientBackground(
+              body: GradientBackground(
+            child: SafeArea(
+              bottom: false,
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -109,10 +111,13 @@ class StudyAnalyticsPage extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.end,
-                              children: List.generate(state.dayLabels.length, (index) {
+                              children: List.generate(state.dayLabels.length,
+                                  (index) {
                                 final day = state.dayLabels[index];
-                                final heightFactor = state.dayHeightFactors[index];
-                                final isSelected = state.selectedDayIndex == index;
+                                final heightFactor =
+                                    state.dayHeightFactors[index];
+                                final isSelected =
+                                    state.selectedDayIndex == index;
 
                                 return GestureDetector(
                                   onTap: () {
@@ -131,7 +136,8 @@ class StudyAnalyticsPage extends StatelessWidget {
                                                   .withValues(alpha: 0.4)
                                               : AppColors.lightBorder
                                                   .withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                           border: isSelected
                                               ? Border.all(
                                                   color: isDark
@@ -149,8 +155,10 @@ class StudyAnalyticsPage extends StatelessWidget {
                                             decoration: BoxDecoration(
                                               color: isSelected
                                                   ? AppColors.primary
-                                                  : AppColors.primary.withValues(
-                                                      alpha: isDark ? 0.35 : 0.45,
+                                                  : AppColors.primary
+                                                      .withValues(
+                                                      alpha:
+                                                          isDark ? 0.35 : 0.45,
                                                     ),
                                               borderRadius:
                                                   BorderRadius.circular(6),
@@ -168,7 +176,8 @@ class StudyAnalyticsPage extends StatelessWidget {
                                                   : AppColors.primaryDark)
                                               : (isDark
                                                   ? AppColors.darkTextSecondary
-                                                  : AppColors.lightTextSecondary),
+                                                  : AppColors
+                                                      .lightTextSecondary),
                                           fontWeight: isSelected
                                               ? FontWeight.bold
                                               : FontWeight.w500,
@@ -197,7 +206,8 @@ class StudyAnalyticsPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     if (!state.hasBreakdown)
                       GlassCard(
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 32, horizontal: 16),
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -226,7 +236,8 @@ class StudyAnalyticsPage extends StatelessWidget {
                     else
                       ...state.breakdownRows.asMap().entries.map((entry) {
                         final row = entry.value;
-                        final isLast = entry.key == state.breakdownRows.length - 1;
+                        final isLast =
+                            entry.key == state.breakdownRows.length - 1;
                         return Padding(
                           padding: EdgeInsets.only(bottom: isLast ? 24 : 20),
                           child: _buildBreakdownRow(
@@ -243,7 +254,8 @@ class StudyAnalyticsPage extends StatelessWidget {
                 ),
               ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

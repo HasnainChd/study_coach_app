@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -38,6 +39,7 @@ import 'features/subjects/domain/usecases/remove_subject_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
 
@@ -110,112 +112,145 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(hiveBox)),
-        BlocProvider<NavigationBloc>(
-          create: (context) => NavigationBloc(initialScreen: initialScreen),
-        ),
-        BlocProvider<SubjectsBloc>(
-          create: (context) => SubjectsBloc(
-            repository: repository,
-            getSubjectsUseCase: GetSubjectsUseCase(repository),
-            addSubjectUseCase: AddSubjectUseCase(repository),
-            removeSubjectUseCase: RemoveSubjectUseCase(repository),
-            generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
-            studyHistoryRepository: studyHistoryRepository,
-            usageLimitService: usageLimitService,
-          )..add(LoadSubjectsEvent()),
-        ),
-        BlocProvider<AnalyticsBloc>(
-          create: (context) => AnalyticsBloc(
-            studyHistoryRepository: studyHistoryRepository,
+        providers: [
+          BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(hiveBox)),
+          BlocProvider<NavigationBloc>(
+            create: (context) => NavigationBloc(initialScreen: initialScreen),
           ),
-        ),
-        BlocProvider<TimerBloc>(
-          create: (context) => TimerBloc(timerDataSource: timerLocalDataSource),
-        ),
-        // ChatBloc reads the current SubjectsBloc state so it can build a
-        // context-aware system prompt using real subjects / agenda / gamification.
-        BlocProvider<ChatBloc>(
-          create: (context) => ChatBloc(
-            chatRepository: chatRepository,
-            initialSubjectsState: context.read<SubjectsBloc>().state,
-            initialTimerState: context.read<TimerBloc>().state,
-            usageLimitService: usageLimitService,
+          BlocProvider<SubjectsBloc>(
+            create: (context) => SubjectsBloc(
+              repository: repository,
+              getSubjectsUseCase: GetSubjectsUseCase(repository),
+              addSubjectUseCase: AddSubjectUseCase(repository),
+              removeSubjectUseCase: RemoveSubjectUseCase(repository),
+              generateStudyPlanUseCase: GenerateStudyPlanUseCase(repository),
+              studyHistoryRepository: studyHistoryRepository,
+              usageLimitService: usageLimitService,
+            )..add(LoadSubjectsEvent()),
           ),
-        ),
-      ],
-      child: BlocBuilder<ThemeBloc, ThemeMode>(
-        builder: (context, themeMode) {
-          return MaterialApp(
-            title: 'Study Coach AI',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeMode,
-            home: Scaffold(
-              body: BlocListener<SubjectsBloc, SubjectsState>(
-                listenWhen: (previous, current) =>
-                    !previous.showNotificationPermissionWarning &&
-                    current.showNotificationPermissionWarning,
-                listener: (context, state) {
-                  AppSnackbar.show(
-                    context,
-                    type: SnackbarType.warning,
-                    title: 'Notifications disabled',
-                    message: 'Notifications are disabled in system settings. '
-                        'Enable them to receive reminders.',
-                  );
-                  context.read<SubjectsBloc>().add(
-                        ClearNotificationPermissionWarningEvent(),
-                      );
-                },
-                child: BlocListener<TimerBloc, TimerState>(
-                  listenWhen: (previous, current) =>
-                      previous.pendingStartEvent != current.pendingStartEvent &&
-                      current.pendingStartEvent != null,
-                  listener: (context, state) {
-                    _showActiveSessionConflictDialog(context, state);
-                  },
-                  child: BlocListener<NavigationBloc, NavigationState>(
-                    listener: (context, navState) {
-                      if (navState.currentScreen == AppScreen.focusTimer) {
-                        context.read<TimerBloc>().add(SyncTimerEvent());
-                      }
-                    },
-                    child: BlocBuilder<NavigationBloc, NavigationState>(
-                      builder: (context, navState) {
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder:
-                              (Widget child, Animation<double> animation) {
-                            final slideAnimation = Tween<Offset>(
-                              begin: const Offset(0.05, 0.0),
-                              end: Offset.zero,
-                            ).animate(animation);
-
-                            return SlideTransition(
-                              position: slideAnimation,
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: _buildScreen(navState.currentScreen),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+          BlocProvider<AnalyticsBloc>(
+            create: (context) => AnalyticsBloc(
+              studyHistoryRepository: studyHistoryRepository,
             ),
-          );
-        },
-      ),
-    );
+          ),
+          BlocProvider<TimerBloc>(
+            create: (context) =>
+                TimerBloc(timerDataSource: timerLocalDataSource),
+          ),
+          // ChatBloc reads the current SubjectsBloc state so it can build a
+          // context-aware system prompt using real subjects / agenda / gamification.
+          BlocProvider<ChatBloc>(
+            create: (context) => ChatBloc(
+              chatRepository: chatRepository,
+              initialSubjectsState: context.read<SubjectsBloc>().state,
+              initialTimerState: context.read<TimerBloc>().state,
+              usageLimitService: usageLimitService,
+            ),
+          ),
+        ],
+        child: BlocBuilder<SubjectsBloc, SubjectsState>(
+          builder: (context, subjectsState) {
+            final activeThemeId = subjectsState.activeThemeId;
+            return BlocBuilder<ThemeBloc, ThemeMode>(
+              builder: (context, themeMode) {
+                final platformBrightness =
+                    MediaQuery.platformBrightnessOf(context);
+                final isDark = themeMode == ThemeMode.dark ||
+                    (themeMode == ThemeMode.system &&
+                        platformBrightness == Brightness.dark);
+
+                final overlayStyle = SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness:
+                      isDark ? Brightness.light : Brightness.dark,
+                  statusBarBrightness:
+                      isDark ? Brightness.dark : Brightness.light,
+                  systemNavigationBarColor: Colors.transparent,
+                  systemNavigationBarIconBrightness:
+                      isDark ? Brightness.light : Brightness.dark,
+                );
+
+                SystemChrome.setSystemUIOverlayStyle(overlayStyle);
+
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                    value: overlayStyle,
+                    child: MaterialApp(
+                      title: 'Study Coach AI',
+                      debugShowCheckedModeBanner: false,
+                      theme: AppTheme.getLightTheme(activeThemeId),
+                      darkTheme: AppTheme.getDarkTheme(activeThemeId),
+                      themeMode: themeMode,
+                      home: Scaffold(
+                        body: BlocListener<SubjectsBloc, SubjectsState>(
+                          listenWhen: (previous, current) =>
+                              !previous.showNotificationPermissionWarning &&
+                              current.showNotificationPermissionWarning,
+                          listener: (context, state) {
+                            AppSnackbar.show(
+                              context,
+                              type: SnackbarType.warning,
+                              title: 'Notifications disabled',
+                              message:
+                                  'Notifications are disabled in system settings. '
+                                  'Enable them to receive reminders.',
+                            );
+                            context.read<SubjectsBloc>().add(
+                                  ClearNotificationPermissionWarningEvent(),
+                                );
+                          },
+                          child: BlocListener<TimerBloc, TimerState>(
+                            listenWhen: (previous, current) =>
+                                previous.pendingStartEvent !=
+                                    current.pendingStartEvent &&
+                                current.pendingStartEvent != null,
+                            listener: (context, state) {
+                              _showActiveSessionConflictDialog(context, state);
+                            },
+                            child:
+                                BlocListener<NavigationBloc, NavigationState>(
+                              listener: (context, navState) {
+                                if (navState.currentScreen ==
+                                    AppScreen.focusTimer) {
+                                  context
+                                      .read<TimerBloc>()
+                                      .add(SyncTimerEvent());
+                                }
+                              },
+                              child:
+                                  BlocBuilder<NavigationBloc, NavigationState>(
+                                builder: (context, navState) {
+                                  return AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 350),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    transitionBuilder: (Widget child,
+                                        Animation<double> animation) {
+                                      final slideAnimation = Tween<Offset>(
+                                        begin: const Offset(0.05, 0.0),
+                                        end: Offset.zero,
+                                      ).animate(animation);
+
+                                      return SlideTransition(
+                                        position: slideAnimation,
+                                        child: FadeTransition(
+                                          opacity: animation,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: _buildScreen(navState.currentScreen),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ));
+              },
+            );
+          },
+        ));
   }
 
   void _showActiveSessionConflictDialog(
@@ -225,8 +260,8 @@ class MyApp extends StatelessWidget {
 
     final activeTaskTitle =
         state.taskTitle ?? state.subjectName ?? 'Active Session';
-    final elapsedSecs =
-        (state.totalSeconds - state.remainingSeconds).clamp(0, state.totalSeconds);
+    final elapsedSecs = (state.totalSeconds - state.remainingSeconds)
+        .clamp(0, state.totalSeconds);
     final elapsedFormatted = _formatElapsed(elapsedSecs);
 
     showDialog<void>(
@@ -289,9 +324,7 @@ class MyApp extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.of(dialogCtx).pop();
-                        context
-                            .read<TimerBloc>()
-                            .add(ClearPendingStartEvent());
+                        context.read<TimerBloc>().add(ClearPendingStartEvent());
                       },
                       child: Text(
                         'Cancel',
@@ -316,9 +349,7 @@ class MyApp extends StatelessWidget {
                       ),
                       onPressed: () {
                         Navigator.of(dialogCtx).pop();
-                        context
-                            .read<TimerBloc>()
-                            .add(ClearPendingStartEvent());
+                        context.read<TimerBloc>().add(ClearPendingStartEvent());
                         context.read<TimerBloc>().add(StartTimerEvent(
                               taskId: pending.taskId,
                               durationSeconds: pending.durationSeconds,
