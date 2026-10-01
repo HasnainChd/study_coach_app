@@ -5,6 +5,7 @@ class SettingsPreferences {
   final bool dailyReminder;
   final bool streakAlerts;
   final bool studyTips;
+  final String? gradeLevel;
 
   SettingsPreferences({
     this.pomodoroFocus = 25,
@@ -13,6 +14,7 @@ class SettingsPreferences {
     this.dailyReminder = true,
     this.streakAlerts = true,
     this.studyTips = false,
+    this.gradeLevel,
   });
 
   SettingsPreferences copyWith({
@@ -22,6 +24,8 @@ class SettingsPreferences {
     bool? dailyReminder,
     bool? streakAlerts,
     bool? studyTips,
+    String? gradeLevel,
+    bool clearGradeLevel = false,
   }) {
     return SettingsPreferences(
       pomodoroFocus: pomodoroFocus ?? this.pomodoroFocus,
@@ -30,6 +34,7 @@ class SettingsPreferences {
       dailyReminder: dailyReminder ?? this.dailyReminder,
       streakAlerts: streakAlerts ?? this.streakAlerts,
       studyTips: studyTips ?? this.studyTips,
+      gradeLevel: clearGradeLevel ? null : (gradeLevel ?? this.gradeLevel),
     );
   }
 }

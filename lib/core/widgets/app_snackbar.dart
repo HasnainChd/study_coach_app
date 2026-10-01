@@ -16,9 +16,9 @@ class AppSnackbar {
     final iconData = _getIconData(type);
     final autoDuration = duration ??
         (type == SnackbarType.error
-            ? const Duration(seconds: 4)
+            ? const Duration(seconds: 3)
             : (onUndo != null
-                ? const Duration(seconds: 5)
+                ? const Duration(seconds: 4)
                 : const Duration(milliseconds: 2500)));
 
     final hasMessage = message != null && message.trim().isNotEmpty;

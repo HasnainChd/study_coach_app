@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/grade_selector_row.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/services/usage_limit_service.dart';
@@ -25,7 +26,7 @@ class SettingsPage extends StatelessWidget {
     AppSnackbar.show(
       context,
       type: SnackbarType.info,
-      title: 'Study plan setting updated',
+      title: 'Study plan updated',
       message: _studyPlanUpdatedMessage,
     );
   }
@@ -369,9 +370,11 @@ class SettingsPage extends StatelessWidget {
           builder: (context, state) {
             final prefs = state.settings;
 
-            return Stack(
-              children: [
-                SingleChildScrollView(
+            return SafeArea(
+              bottom: false,
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 24.0, vertical: 16.0),
                   child: Column(
@@ -506,6 +509,71 @@ class SettingsPage extends StatelessWidget {
                               ),
                             );
                           },
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // GRADE / CLASS
+                      Text(
+                        'GRADE / CLASS',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GlassCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Student Level',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.lightTextPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  prefs.gradeLevel ?? 'Not set',
+                                  style: TextStyle(
+                                    color: prefs.gradeLevel != null
+                                        ? AppColors.primary
+                                        : (isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            GradeSelectorRow(
+                              selectedGrade: prefs.gradeLevel,
+                              onGradeSelected: (newGrade) {
+                                if (newGrade == null) {
+                                  context.read<SubjectsBloc>().add(
+                                        UpdateSettingsPreferencesEvent(
+                                            clearGradeLevel: true),
+                                      );
+                                } else {
+                                  context.read<SubjectsBloc>().add(
+                                        UpdateSettingsPreferencesEvent(
+                                            gradeLevel: newGrade),
+                                      );
+                                }
+                              },
+                              isDark: isDark,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -932,7 +1000,8 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
               ],
-            );
+            ),
+          );
           },
         ),
       ),

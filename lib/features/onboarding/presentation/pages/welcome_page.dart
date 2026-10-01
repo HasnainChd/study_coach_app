@@ -35,7 +35,8 @@ class WelcomePage extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: GradientBackground(
+        body: GradientBackground(
+      child: SafeArea(
         child: Stack(
           children: [
             // Centered main content
@@ -51,13 +52,15 @@ class WelcomePage extends StatelessWidget {
                         child: Form(
                           key: _formKey,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // Step Indicator
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0),
                                   child: Row(
                                     children: [
                                       const Spacer(),
@@ -66,17 +69,22 @@ class WelcomePage extends StatelessWidget {
                                             horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? AppColors.primary.withValues(alpha: 0.1)
-                                              : AppColors.primary.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(20),
+                                              ? AppColors.primary
+                                                  .withValues(alpha: 0.1)
+                                              : AppColors.primary
+                                                  .withValues(alpha: 0.08),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
                                           border: Border.all(
-                                            color: AppColors.primary.withValues(alpha: 0.2),
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.2),
                                             width: 1,
                                           ),
                                         ),
                                         child: Text(
                                           'Step 1 of 3',
-                                          style: AppTextStyles.labelSmall.copyWith(
+                                          style:
+                                              AppTextStyles.labelSmall.copyWith(
                                             color: isDark
                                                 ? AppColors.primaryLight
                                                 : AppColors.primaryDark,
@@ -94,11 +102,13 @@ class WelcomePage extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: isDark
-                                        ? AppColors.primary.withValues(alpha: 0.8)
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.8)
                                         : AppColors.primary,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.4),
                                         blurRadius: 24,
                                         spreadRadius: 2,
                                         offset: const Offset(0, 4),
@@ -142,27 +152,39 @@ class WelcomePage extends StatelessWidget {
                                 TextFormField(
                                   controller: _nameController,
                                   style: AppTextStyles.bodyMedium.copyWith(
-                                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.lightTextPrimary,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Enter your name',
-                                    hintStyle: AppTextStyles.bodyMedium.copyWith(
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                    hintStyle:
+                                        AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
                                     ),
                                     filled: true,
-                                    fillColor: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                                    fillColor: isDark
+                                        ? AppColors.darkCardBg
+                                        : AppColors.lightCardBg,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 18),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder,
                                         width: 1.5,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
-                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder,
                                         width: 1.5,
                                       ),
                                     ),
@@ -194,7 +216,8 @@ class WelcomePage extends StatelessWidget {
                                   ),
                                 ),
                                 const Spacer(flex: 2),
-                                const SizedBox(height: 120), // bottom button placeholder
+                                const SizedBox(
+                                    height: 120), // bottom button placeholder
                               ],
                             ),
                           ),
@@ -208,19 +231,18 @@ class WelcomePage extends StatelessWidget {
             // Pinned Get Started Button
             Align(
               alignment: Alignment.bottomCenter,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
-                  child: PrimaryButton(
-                    text: 'Get Started',
-                    onPressed: () => _handleGetStarted(context),
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    left: 24.0, right: 24.0, bottom: 24.0),
+                child: PrimaryButton(
+                  text: 'Get Started',
+                  onPressed: () => _handleGetStarted(context),
                 ),
               ),
             ),
           ],
         ),
       ),
-    );
+    ));
   }
 }
