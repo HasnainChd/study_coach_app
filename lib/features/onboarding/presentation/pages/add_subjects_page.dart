@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -29,7 +30,10 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
     'History',
     'Biology',
     'Chemistry',
+    'Physics',
     'Computer Science',
+    'Economics',
+    'Social Studies',
   ];
 
   Color _getUniqueSubjectColor(
@@ -678,6 +682,15 @@ class _AddSubjectsPageState extends State<AddSubjectsPage> {
                           );
                           return;
                         }
+                        try {
+                          AnalyticsService.capture(
+                            'onboarding_step2_completed',
+                            properties: {
+                              'subject_count': state.subjects.length,
+                              'subjects': state.subjects.map((s) => s.name).toList(),
+                            },
+                          );
+                        } catch (_) {}
                         context.read<NavigationBloc>().add(
                               NavigateToScreenEvent(AppScreen.dailySchedule),
                             );

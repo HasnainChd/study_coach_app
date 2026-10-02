@@ -9,6 +9,7 @@ import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/grade_selector_row.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/usage_limit_service.dart';
 import '../../../bloc/navigation_bloc.dart';
 import '../../../bloc/subjects_bloc.dart';
@@ -198,6 +199,9 @@ class SettingsPage extends StatelessWidget {
                 InkWell(
                   onTap: () {
                     Navigator.pop(dialogContext);
+                    try {
+                      AnalyticsService.capture('plan_regenerated');
+                    } catch (_) {}
                     final state = context.read<SubjectsBloc>().state;
                     context.read<SubjectsBloc>().add(
                           RegenerateStudyPlanEvent(

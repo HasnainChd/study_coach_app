@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -67,9 +68,18 @@ class DashboardShell extends StatelessWidget {
       child: BlocBuilder<NavigationBloc, NavigationState>(
         builder: (context, navState) {
           return Scaffold(
-            body: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _buildPage(navState.activeTabIndex),
+            body: PopScope(
+              canPop: navState.activeTabIndex == 0,
+              onPopInvokedWithResult: (didPop, result) {
+                if (didPop) return;
+                context
+                    .read<NavigationBloc>()
+                    .add(SwitchDashboardTabEvent(0));
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _buildPage(navState.activeTabIndex),
+              ),
             ),
             bottomNavigationBar: Container(
               decoration: BoxDecoration(
@@ -190,6 +200,12 @@ class DashboardShell extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
+          try {
+            AnalyticsService.capture(
+              'tab_switched',
+              properties: {'tab_name': label},
+            );
+          } catch (_) {}
           context.read<NavigationBloc>().add(SwitchDashboardTabEvent(index));
           if (index == 1) {
             final subjects = context.read<SubjectsBloc>().state.subjects;

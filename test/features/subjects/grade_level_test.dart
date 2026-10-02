@@ -142,7 +142,7 @@ void main() {
       }
     });
 
-    test('Physics returns Physics topics in every band', () {
+    test('Physics returns Physics topics in every band (not Science topics)', () {
       final allBands = [
         kBandMiddleSchool,
         kBandEarlyHighSchool,
@@ -153,7 +153,56 @@ void main() {
 
       for (final band in allBands) {
         final topics = band.getTopicsForSubject('Physics');
-        expect(topics, equals(band.subjectTopics['Physics']));
+        final physTopics = band.subjectTopics['Physics'];
+        final scienceTopics = band.subjectTopics['Science'];
+
+        expect(topics, isNotNull);
+        expect(topics, equals(physTopics));
+        expect(topics, isNot(equals(scienceTopics)));
+      }
+    });
+
+    test('Economics returns Economics topics in every band', () {
+      final allBands = [
+        kBandMiddleSchool,
+        kBandEarlyHighSchool,
+        kBandLateHighSchool,
+        kBandUndergraduate,
+        kBandPostgraduate,
+      ];
+
+      for (final band in allBands) {
+        final topics = band.getTopicsForSubject('Economics');
+        expect(topics, isNotNull);
+        expect(topics, equals(band.subjectTopics['Economics']));
+
+        // Test alias
+        final aliasTopics = band.getTopicsForSubject('Econ');
+        expect(aliasTopics, equals(band.subjectTopics['Economics']));
+      }
+    });
+
+    test('Social Studies returns Social Studies topics in every band (not Science topics)', () {
+      final allBands = [
+        kBandMiddleSchool,
+        kBandEarlyHighSchool,
+        kBandLateHighSchool,
+        kBandUndergraduate,
+        kBandPostgraduate,
+      ];
+
+      for (final band in allBands) {
+        final topics = band.getTopicsForSubject('Social Studies');
+        final sstTopics = band.subjectTopics['Social Studies'];
+        final scienceTopics = band.subjectTopics['Science'];
+
+        expect(topics, isNotNull);
+        expect(topics, equals(sstTopics));
+        expect(topics, isNot(equals(scienceTopics)));
+
+        // Test aliases
+        expect(band.getTopicsForSubject('SST'), equals(sstTopics));
+        expect(band.getTopicsForSubject('Social Science'), equals(sstTopics));
       }
     });
   });

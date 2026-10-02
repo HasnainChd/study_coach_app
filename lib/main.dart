@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/usage_limit_service.dart';
 import 'core/theme/app_colors.dart';
@@ -77,6 +77,13 @@ void main() async {
   final hasCompletedOnboarding = await repository.getHasCompletedOnboarding();
   final initialScreen =
       hasCompletedOnboarding ? AppScreen.dashboard : AppScreen.welcome;
+
+  final config =
+      PostHogConfig('phc_AaiFNx38Bd5vaSkW9yTC2VfYf3kyYF5PrETwefB5acMZ');
+  config.host = 'https://us.i.posthog.com';
+  config.debug = false; // set true only during testing
+  config.captureApplicationLifecycleEvents = true;
+  await Posthog().setup(config);
 
   runApp(MyApp(
     hiveBox: box,
@@ -177,6 +184,7 @@ class MyApp extends StatelessWidget {
                     child: MaterialApp(
                       title: 'Study Coach AI',
                       debugShowCheckedModeBanner: false,
+                      navigatorObservers: [PosthogObserver()],
                       theme: AppTheme.getLightTheme(activeThemeId),
                       darkTheme: AppTheme.getDarkTheme(activeThemeId),
                       themeMode: themeMode,

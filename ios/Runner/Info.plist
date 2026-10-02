@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>com.posthog.posthog.PROJECT_TOKEN</key>
+	<string>phc_AaiFNx38Bd5vaSkW9yTC2VfYf3kyYF5PrETwefB5acMZ</string>
+	<key>com.posthog.posthog.POSTHOG_HOST</key>
+	<string>https://us.i.posthog.com</string>
+	<key>com.posthog.posthog.AUTO_INIT</key>
+	<false/>
 </dict>
 </plist>

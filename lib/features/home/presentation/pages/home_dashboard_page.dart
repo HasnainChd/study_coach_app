@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/usage_limit_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -20,6 +21,7 @@ import '../widgets/streak_celebration_dialog.dart';
 class HomeDashboardPage extends StatelessWidget {
   const HomeDashboardPage({super.key});
 
+  static bool justCompletedOnboarding = false;
   static final ValueNotifier<String?> userNameNotifier =
       ValueNotifier<String?>(null);
   static final ValueNotifier<int?> levelUpNotifier = ValueNotifier<int?>(null);
@@ -392,6 +394,16 @@ class HomeDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     loadName();
+    if (justCompletedOnboarding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (justCompletedOnboarding) {
+          justCompletedOnboarding = false;
+          try {
+            AnalyticsService.capture('onboarding_finished');
+          } catch (_) {}
+        }
+      });
+    }
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -1501,6 +1513,9 @@ class HomeDashboardPage extends StatelessWidget {
         size: 24,
       ),
       onPressed: () {
+        try {
+          AnalyticsService.capture('session_started');
+        } catch (_) {}
         context.read<TimerBloc>().add(
               StartTimerEvent(
                 taskId: activeItem?.id,

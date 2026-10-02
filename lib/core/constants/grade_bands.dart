@@ -34,6 +34,13 @@ class GradeBand {
       'chemistry': 'Chemistry',
       'phys': 'Physics',
       'physics': 'Physics',
+      'econ': 'Economics',
+      'economics': 'Economics',
+      'social studies': 'Social Studies',
+      'social study': 'Social Studies',
+      'social science': 'Social Studies',
+      'social sciences': 'Social Studies',
+      'sst': 'Social Studies',
     };
 
     final aliasedKey = aliasMap[cleanInput];
@@ -134,6 +141,18 @@ const GradeBand kBandMiddleSchool = GradeBand(
       'Computer hardware vs software basics',
       'Digital safety and internet security fundamentals',
     ],
+    'Economics': [
+      'Needs vs. wants and basic budgeting',
+      'Goods, services, consumers, and producers',
+      'Introduction to trade, money, and markets',
+      'Saving, spending, and simple personal finance',
+    ],
+    'Social Studies': [
+      'Communities, cultures, and global geography',
+      'Basic map reading, continents, and landforms',
+      'Ancient civilizations and cultural heritage',
+      'Civic responsibility and local community governance',
+    ],
   },
 );
 
@@ -190,6 +209,20 @@ const GradeBand kBandEarlyHighSchool = GradeBand(
       'Functions, parameters, and return values',
       'Arrays and list manipulation',
       'Basic sorting and searching algorithms (linear search and bubble sort)',
+    ],
+    'Economics': [
+      'Supply, demand, and market equilibrium',
+      'Scarcity, opportunity cost, and allocation of resources',
+      'Types of economic systems (market, mixed, command)',
+      'Role of government, taxes, and public goods',
+      'Basic personal finance, credit, and banking',
+    ],
+    'Social Studies': [
+      'World geography and environmental-human interaction',
+      'Comparative government systems and civic rights',
+      'Historical revolutions and modern state formation',
+      'Global trade networks, urbanization, and migration',
+      'Human rights, citizenship, and global institutions',
     ],
   },
 );
@@ -248,6 +281,20 @@ const GradeBand kBandLateHighSchool = GradeBand(
       'Recursion and algorithmic thinking',
       'Basic space and time efficiency concepts',
     ],
+    'Economics': [
+      'Microeconomics: elasticity, consumer surplus, and market structures',
+      'Macroeconomics: GDP, inflation, and unemployment',
+      'Fiscal policy, monetary policy, and central banking',
+      'International trade, exchange rates, and tariffs',
+      'Economic growth, development indicators, and market failures',
+    ],
+    'Social Studies': [
+      'Comparative political systems and constitutional principles',
+      'Geopolitics, international relations, and conflict resolution',
+      'Economic geography, demographics, and resource distribution',
+      'Sociological concepts, institutions, and social change',
+      'Global treaties, sustainability, and international law',
+    ],
   },
 );
 
@@ -305,6 +352,20 @@ const GradeBand kBandUndergraduate = GradeBand(
       'Database management systems and SQL optimization',
       'Computer architecture and assembly language',
     ],
+    'Economics': [
+      'Intermediate microeconomics (utility maximization, game theory)',
+      'Intermediate macroeconomics (IS-LM, AS-AD, Solow growth model)',
+      'Econometrics, regression analysis, and quantitative modeling',
+      'Public finance, welfare economics, and institutional economics',
+      'Development economics and international monetary systems',
+    ],
+    'Social Studies': [
+      'Sociological theory and social stratification analysis',
+      'Political philosophy, democratic theory, and governance',
+      'Qualitative and quantitative social science research methods',
+      'International relations theory, diplomacy, and security studies',
+      'Urban studies, development policy, and human rights frameworks',
+    ],
   },
 );
 
@@ -356,6 +417,20 @@ const GradeBand kBandPostgraduate = GradeBand(
       'Deep learning architectures and mathematical foundations',
       'Advanced cryptography and security protocols',
       'Compiler design and program analysis',
+    ],
+    'Economics': [
+      'Advanced microeconomic theory (general equilibrium, mechanism design)',
+      'Advanced macroeconomic modeling (DSGE models, dynamic optimization)',
+      'Applied microeconometrics, time-series, and causal inference',
+      'Behavioral and experimental economics research',
+      'Asset pricing, financial econometrics, and policy evaluation',
+    ],
+    'Social Studies': [
+      'Advanced social theory and critical historiography',
+      'Comparative political economy and institutional analysis',
+      'Mixed-methods research design and computational social science',
+      'Public policy formulation, evaluation, and global governance',
+      'Transnational sociology, migration studies, and conflict analysis',
     ],
   },
 );

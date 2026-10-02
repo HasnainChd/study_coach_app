@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../../../../core/services/analytics_service.dart';
+import '../../../../core/services/usage_limit_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -10,10 +11,10 @@ import '../../../../core/widgets/grade_selector_row.dart';
 import '../../../../core/widgets/gradient_background.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../bloc/navigation_bloc.dart';
+import '../../../home/presentation/pages/home_dashboard_page.dart';
 import '../../../subjects/presentation/bloc/subjects_bloc.dart';
 import '../../../subjects/presentation/bloc/subjects_event.dart';
 import '../../../subjects/presentation/bloc/subjects_state.dart';
-import '../../../../core/services/usage_limit_service.dart';
 
 class DailySchedulePage extends StatelessWidget {
   const DailySchedulePage({super.key});
@@ -27,6 +28,7 @@ class DailySchedulePage extends StatelessWidget {
       body: BlocConsumer<SubjectsBloc, SubjectsState>(
         listener: (context, state) {
           if (state.status == SubjectsStatus.planGenerated) {
+            HomeDashboardPage.justCompletedOnboarding = true;
             if (state.planBudgetWarningMessage != null) {
               AppSnackbar.show(
                 context,
@@ -62,7 +64,9 @@ class DailySchedulePage extends StatelessWidget {
                       Text(
                         "You've used ${UsageType.planGenerate.limit}/${UsageType.planGenerate.limit} plan creations today. Please try again tomorrow.",
                         style: TextStyle(
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -73,14 +77,15 @@ class DailySchedulePage extends StatelessWidget {
                           onTap: () => Navigator.pop(dialogContext),
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 10),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [
-                                    AppColors.primary,
-                                    Color(0xFF805CFF),
-                                  ],
-                                ),
+                                  AppColors.primary,
+                                  Color(0xFF805CFF),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Text(
@@ -109,13 +114,16 @@ class DailySchedulePage extends StatelessWidget {
               message = "Gemini AI is overloaded. Wait 1 minute and try again.";
             } else if (errorMsg.contains("429")) {
               title = "Rate Limit Reached";
-              message = "Too many requests. Please wait a few minutes before generating your plan.";
+              message =
+                  "Too many requests. Please wait a few minutes before generating your plan.";
             } else if (errorMsg.contains("401") || errorMsg.contains("403")) {
               title = "API Key Invalid";
               message = "Check your Gemini API key in the app configuration.";
-            } else if (errorMsg.contains("least one subject") || errorMsg.contains("ArgumentError")) {
+            } else if (errorMsg.contains("least one subject") ||
+                errorMsg.contains("ArgumentError")) {
               title = "No Subjects Added";
-              message = "Please add at least one subject before generating your plan.";
+              message =
+                  "Please add at least one subject before generating your plan.";
             }
 
             AppSnackbar.show(
@@ -135,352 +143,367 @@ class DailySchedulePage extends StatelessWidget {
                 child: SafeArea(
                   child: Column(
                     children: [
-                    // Header with back button & Step indicator
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_back_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.lightTextPrimary,
-                            ),
-                            onPressed: isGenerating
-                                ? null
-                                : () {
-                                    context.read<NavigationBloc>().add(
-                                          NavigateToScreenEvent(
-                                              AppScreen.addSubjects),
-                                        );
-                                  },
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.primary.withValues(alpha: 0.1)
-                                  : AppColors.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              'Step 3 of 3',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primaryDark,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Title section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      // Header with back button & Step indicator
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 12.0),
+                        child: Row(
                           children: [
-                            Text(
-                              'Your Study\nSchedule',
-                              style: AppTextStyles.headingMedium.copyWith(
+                            IconButton(
+                              icon: Icon(
+                                Icons.arrow_back_rounded,
                                 color: isDark
-                                    ? AppColors.darkTextPrimary
+                                    ? Colors.white
                                     : AppColors.lightTextPrimary,
-                                height: 1.2,
                               ),
+                              onPressed: isGenerating
+                                  ? null
+                                  : () {
+                                      context.read<NavigationBloc>().add(
+                                            NavigateToScreenEvent(
+                                                AppScreen.addSubjects),
+                                          );
+                                    },
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Help us build your personalized plan',
-                              style: AppTextStyles.bodyMedium.copyWith(
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
                                 color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
+                                    ? AppColors.primary.withValues(alpha: 0.1)
+                                    : AppColors.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                'Step 3 of 3',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.primaryLight
+                                      : AppColors.primaryDark,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Scrollable Content
-                    Expanded(
-                      child: SingleChildScrollView(
+                      // Title section
+                      Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Grade / Class Section (Optional)
-                            Row(
-                              children: [
-                                Text(
-                                  'Grade / Class',
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: isDark
-                                        ? AppColors.darkTextPrimary
-                                        : AppColors.lightTextPrimary,
-                                    fontSize: 18,
-                                  ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Your Study\nSchedule',
+                                style: AppTextStyles.headingMedium.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
+                                  height: 1.2,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '(Optional)',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: isDark
-                                        ? AppColors.darkTextSecondary
-                                        : AppColors.lightTextSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Helps AI tailor study topics to your level',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                                fontSize: 12,
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            GradeSelectorRow(
-                              selectedGrade: state.settings.gradeLevel,
-                              onGradeSelected: isGenerating
-                                  ? (_) {}
-                                  : (newGrade) {
-                                      if (newGrade == null) {
-                                        context.read<SubjectsBloc>().add(
-                                              UpdateSettingsPreferencesEvent(
-                                                  clearGradeLevel: true),
-                                            );
-                                      } else {
-                                        context.read<SubjectsBloc>().add(
-                                              UpdateSettingsPreferencesEvent(
-                                                  gradeLevel: newGrade),
-                                            );
-                                      }
-                                    },
-                              isDark: isDark,
-                            ),
-                            const SizedBox(height: 28),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Help us build your personalized plan',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Scrollable Content
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Grade / Class Section (Optional)
+                              Row(
+                                children: [
+                                  Text(
+                                    'Grade / Class',
+                                    style: AppTextStyles.headingSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.lightTextPrimary,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '(Optional)',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Helps AI tailor study topics to your level',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              GradeSelectorRow(
+                                selectedGrade: state.settings.gradeLevel,
+                                onGradeSelected: isGenerating
+                                    ? (_) {}
+                                    : (newGrade) {
+                                        if (newGrade == null) {
+                                          context.read<SubjectsBloc>().add(
+                                                UpdateSettingsPreferencesEvent(
+                                                    clearGradeLevel: true),
+                                              );
+                                        } else {
+                                          context.read<SubjectsBloc>().add(
+                                                UpdateSettingsPreferencesEvent(
+                                                    gradeLevel: newGrade),
+                                              );
+                                        }
+                                      },
+                                isDark: isDark,
+                              ),
+                              const SizedBox(height: 28),
 
-                            // Daily Study Time Slider Card
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Daily Study Time',
-                                  style: AppTextStyles.headingSmall.copyWith(
-                                    color: isDark
-                                        ? AppColors.darkTextPrimary
-                                        : AppColors.lightTextPrimary,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                                Text(
-                                  '${state.dailyStudyMinutes} min',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? AppColors.primaryLight
-                                        : AppColors.primaryDark,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Slider(
-                              value: state.dailyStudyMinutes.toDouble(),
-                              min: 15,
-                              max: 240,
-                              divisions: 15,
-                              onChanged: isGenerating
-                                  ? null
-                                  : (val) {
-                                      context.read<SubjectsBloc>().add(
-                                            UpdateDailyMinutesEvent(
-                                                val.toInt()),
-                                          );
-                                    },
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Row(
+                              // Daily Study Time Slider Card
+                              Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '15 min',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.lightTextSecondary,
-                                    ),
-                                  ),
-                                  Text(
-                                    '4 hrs',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.lightTextSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Preferred Study Time Section
-                            Text(
-                              'Preferred Study Time',
-                              style: AppTextStyles.headingSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Time slots list
-                            _buildTimeSlotCard(
-                              context,
-                              label: 'Morning (8 AM - 12 PM)',
-                              value: 'Morning',
-                              selectedValue: state.preferredTime,
-                              isDark: isDark,
-                              isEnabled: !isGenerating,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTimeSlotCard(
-                              context,
-                              label: 'Afternoon (1 PM - 5 PM)',
-                              value: 'Afternoon',
-                              selectedValue: state.preferredTime,
-                              isDark: isDark,
-                              isEnabled: !isGenerating,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTimeSlotCard(
-                              context,
-                              label: 'Evening (6 PM - 10 PM)',
-                              value: 'Evening',
-                              selectedValue: state.preferredTime,
-                              isDark: isDark,
-                              isEnabled: !isGenerating,
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Notifications Card
-                            GlassCard(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 16),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Notification Reminders',
-                                    style: AppTextStyles.bodyLarge.copyWith(
+                                    'Daily Study Time',
+                                    style: AppTextStyles.headingSmall.copyWith(
                                       color: isDark
                                           ? AppColors.darkTextPrimary
                                           : AppColors.lightTextPrimary,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 18,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  Switch(
-                                    value: state.notificationsEnabled,
-                                    onChanged: isGenerating
-                                        ? null
-                                        : (val) {
-                                            context.read<SubjectsBloc>().add(
-                                                  ToggleNotificationsEvent(val),
-                                                );
-                                          },
+                                  Text(
+                                    '${state.dailyStudyMinutes} min',
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.primaryLight
+                                          : AppColors.primaryDark,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 24,
+                                    ),
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 12),
+                              Slider(
+                                value: state.dailyStudyMinutes.toDouble(),
+                                min: 15,
+                                max: 240,
+                                divisions: 15,
+                                onChanged: isGenerating
+                                    ? null
+                                    : (val) {
+                                        context.read<SubjectsBloc>().add(
+                                              UpdateDailyMinutesEvent(
+                                                  val.toInt()),
+                                            );
+                                      },
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '15 min',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '4 hrs',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+
+                              // Preferred Study Time Section
+                              Text(
+                                'Preferred Study Time',
+                                style: AppTextStyles.headingSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Time slots list
+                              _buildTimeSlotCard(
+                                context,
+                                label: 'Morning (8 AM - 12 PM)',
+                                value: 'Morning',
+                                selectedValue: state.preferredTime,
+                                isDark: isDark,
+                                isEnabled: !isGenerating,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTimeSlotCard(
+                                context,
+                                label: 'Afternoon (1 PM - 5 PM)',
+                                value: 'Afternoon',
+                                selectedValue: state.preferredTime,
+                                isDark: isDark,
+                                isEnabled: !isGenerating,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTimeSlotCard(
+                                context,
+                                label: 'Evening (6 PM - 10 PM)',
+                                value: 'Evening',
+                                selectedValue: state.preferredTime,
+                                isDark: isDark,
+                                isEnabled: !isGenerating,
+                              ),
+                              const SizedBox(height: 32),
+
+                              // Notifications Card
+                              GlassCard(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Notification Reminders',
+                                      style: AppTextStyles.bodyLarge.copyWith(
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : AppColors.lightTextPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Switch(
+                                      value: state.notificationsEnabled,
+                                      onChanged: isGenerating
+                                          ? null
+                                          : (val) {
+                                              context.read<SubjectsBloc>().add(
+                                                    ToggleNotificationsEvent(
+                                                        val),
+                                                  );
+                                            },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Bottom Button & Indicators
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24.0, vertical: 8.0),
+                        child: PrimaryButton(
+                          text: 'Generate My Plan',
+                          icon: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          isLoading: isGenerating,
+                          onPressed: () {
+                            try {
+                              final grade =
+                                  state.settings.gradeLevel ?? 'not_set';
+                              AnalyticsService.capture(
+                                'onboarding_step3_completed',
+                                properties: {
+                                  'grade': grade,
+                                  'daily_minutes': state.dailyStudyMinutes,
+                                  'preferred_time': state.preferredTime,
+                                },
+                              );
+                            } catch (_) {}
+                            context
+                                .read<SubjectsBloc>()
+                                .add(GenerateStudyPlanEvent());
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Dots Indicators (Page 3 active)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 40),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 24,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    // Bottom Button & Indicators
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0, vertical: 8.0),
-                      child: PrimaryButton(
-                        text: 'Generate My Plan',
-                        icon: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        isLoading: isGenerating,
-                        onPressed: () {
-                          context
-                              .read<SubjectsBloc>()
-                              .add(GenerateStudyPlanEvent());
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Dots Indicators (Page 3 active)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 24,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-            ),
               if (isGenerating)
                 Positioned.fill(
                   child: Container(

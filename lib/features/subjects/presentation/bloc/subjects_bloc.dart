@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../analytics/domain/entities/study_history_entry.dart';
 import '../../../analytics/domain/repositories/study_history_repository.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/usage_limit_service.dart';
+import '../../../rewards/domain/entities/reward_item.dart';
 import '../../domain/entities/subject.dart';
 import '../../domain/entities/agenda_item.dart';
 import '../../domain/entities/settings_preferences.dart';
@@ -155,12 +157,24 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
             currentStreak = 0;
             await repository.saveStreak(0);
             showResetSnackbar = true;
+            try {
+              AnalyticsService.capture(
+                'streak_broken',
+                properties: {'previous_streak': streak},
+              );
+            } catch (_) {}
           }
         } catch (_) {}
       } else if (streak > 0) {
         currentStreak = 0;
         await repository.saveStreak(0);
         showResetSnackbar = true;
+        try {
+          AnalyticsService.capture(
+            'streak_broken',
+            properties: {'previous_streak': streak},
+          );
+        } catch (_) {}
       }
 
       emit(state.copyWith(
@@ -428,6 +442,15 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
 
         final item = toggledItem;
         if (item != null) {
+          try {
+            AnalyticsService.capture(
+              'task_completed',
+              properties: {
+                'subject': item.tag,
+                'duration_min': item.durationMinutes,
+              },
+            );
+          } catch (_) {}
           final today = _formatLocalDate(DateTime.now());
           await studyHistoryRepository.addEntry(
             StudyHistoryEntry(
@@ -687,6 +710,14 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
       newStreak = stateToUse.streak + 1;
     } else {
       // Missing a day or brand new streak
+      if (stateToUse.streak > 0) {
+        try {
+          AnalyticsService.capture(
+            'streak_broken',
+            properties: {'previous_streak': stateToUse.streak},
+          );
+        } catch (_) {}
+      }
       newStreak = 1;
     }
 
@@ -708,6 +739,13 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     await repository.saveStreak(newStreak);
     await repository.saveCoins(newTotalCoins);
     await repository.saveLastStreakClaimedDate(todayStr);
+
+    try {
+      AnalyticsService.capture(
+        'streak_continued',
+        properties: {'streak_count': newStreak},
+      );
+    } catch (_) {}
 
     final String celebrationMsg = newStreak > 1
         ? '🔥 $newStreak Day Streak! +$earnedCoins Coins Earned! 🪙'
@@ -750,6 +788,27 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     await repository.saveCoins(newCoins);
     await repository.saveUnlockedRewards(newUnlocked);
 
+    try {
+      final reward = RewardItem.catalog.firstWhere(
+        (r) => r.id == event.rewardId,
+        orElse: () => RewardItem(
+          id: event.rewardId,
+          title: event.rewardId,
+          description: '',
+          cost: event.cost,
+          category: RewardCategory.theme,
+          icon: '',
+        ),
+      );
+      AnalyticsService.capture(
+        'reward_item_purchased',
+        properties: {
+          'item_name': reward.title,
+          'coin_cost': event.cost,
+        },
+      );
+    } catch (_) {}
+
     if (event.rewardId == 'ai_plan_regen_boost') {
       await usageLimitService.resetCount(UsageType.planRegenerate);
     }
@@ -765,6 +824,27 @@ class SubjectsBloc extends Bloc<SubjectsEvent, SubjectsState> {
     Emitter<SubjectsState> emit,
   ) async {
     await repository.saveActiveThemeId(event.themeId);
+    if (event.themeId != null) {
+      try {
+        final themeReward = RewardItem.catalog.firstWhere(
+          (r) => r.id == event.themeId,
+          orElse: () => RewardItem(
+            id: event.themeId!,
+            title: event.themeId!,
+            description: '',
+            cost: 0,
+            category: RewardCategory.theme,
+            icon: '',
+          ),
+        );
+        AnalyticsService.capture(
+          'theme_equipped',
+          properties: {
+            'theme_name': themeReward.title,
+          },
+        );
+      } catch (_) {}
+    }
     emit(state.copyWith(
       activeThemeId: event.themeId,
       clearActiveThemeId: event.themeId == null,
